@@ -1,0 +1,140 @@
+name: acnoo_flutter_admin_panel
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: '1.0.0'
+
+environment:
+  sdk: '>=3.4.3 <4.0.0'
+  flutter: ^3.24.0
+  
+dependencies:
+  flutter_localization: ^0.2.2
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  responsive_framework: ^1.4.0
+  provider: ^6.1.2
+  dropdown_button2: ^2.3.9
+  country_flags: ^3.0.0
+  iconly: ^1.0.1
+  flutter_svg: ^2.0.10+1
+  material_design_icons_flutter: ^7.0.7296
+  expansion_widget: ^0.1.0
+  syncfusion_flutter_charts: ^26.2.14
+  go_router: ^14.2.7
+  fl_chart: ^0.69.0
+  collection: ^1.18.0
+  flutter_layout_grid: ^2.0.7
+  syncfusion_flutter_calendar: ^26.2.4
+  intl: ^0.19.0
+  feather_icons: ^1.2.0
+  flutter_animate: ^4.5.0
+  table_calendar: ^3.1.2
+  syncfusion_flutter_datagrid: ^26.2.9
+  magicoon_icons: ^0.0.5
+  flex_color_picker: ^3.5.1
+  google_maps_flutter_web: ^0.5.10
+  google_maps_flutter: ^2.9.0
+  iconsax_plus: ^1.0.0
+  syntax_highlight: ^0.4.0
+  url_strategy: ^0.3.0
+  pdf: ^3.11.1
+  printing: ^5.13.3
+  
+  # Packages added by me
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+  image_picker: ^1.1.2
+  file_picker: ^8.1.4
+  http_parser: ^4.0.2
+  faker: ^2.2.0
+  logger: ^1.3.0
+  video_player: ^2.9.2
+  ant_media_flutter: ^1.5.2
+  flutter_webrtc: ^0.12.4
+  pdfx: ^2.8.0
+  syncfusion_flutter_pdfviewer: ^26.2.14
+
+
+  # Remote Packages
+  appflowy_board:
+    # path: ../appflowy-board/
+    git:
+      url: https://github.com/iamtoricool/appflowy-board.git
+      ref: main
+
+  responsive_grid:
+    git: 
+      url: https://github.com/iamtoricool/ResponsiveGrid_Flutter.git
+      ref: master
+
+  pdfrx:
+    git:
+      url: https://github.com/iamtoricool/pdfrx.git
+      ref: acnoo_admin
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  icons_launcher: ^2.1.7
+
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/widget_images/
+    - assets/images/widget_images/banner_images/
+    - assets/images/sidebar_icons/
+    - assets/images/widget_images/dashboard_icon/
+    - assets/images/widget_images/card_images/feature_card/
+    - assets/images/widget_images/sm_icon/
+    - assets/images/widget_images/authentication_images/
+    - assets/images/widget_images/dashboard_overview_icon/
+    - assets/images/widget_images/svg_icons/
+    - assets/images/widget_images/not_found_images/
+    - assets/app_icons/
+    - assets/images/widget_images/dashboard_overview_icon/ecommerce_admin_icons/
+    - assets/images/widget_images/dashboard_overview_icon/ecommerce_admin_icons/category_icons/
+    - assets/images/widget_images/dashboard_overview_icon/influencer_admin_icons/
+    - assets/images/widget_images/dashboard_overview_icon/news_admin_icons/
+    # static images
+    - assets/images/static_images/
+    - assets/images/static_images/ai_generated/images/
+    - assets/images/static_images/avatars/person_images/
+    - assets/images/static_images/avatars/placeholder_avatar/
+    - assets/images/static_images/background_images/
+    - assets/images/static_images/icons/crypto_icons/
+    - assets/images/static_images/placeholder_images/random_placeholders/
+    - assets/images/static_images/product_images/
+    - assets/pdfs/
+  #   - images/a_dot_ham.jpeg
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter/Inter-Thin.ttf
+          weight: 100
+        - asset: fonts/Inter/Inter-ExtraLight.ttf
+          weight: 200
+        - asset: fonts/Inter/Inter-Light.ttf
+          weight: 300
+        - asset: fonts/Inter/Inter-Regular.ttf
+          weight: 400
+        - asset: fonts/Inter/Inter-Medium.ttf
+          weight: 500
+        - asset: fonts/Inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: fonts/Inter/Inter-Bold.ttf
+          weight: 700
+        - asset: fonts/Inter/Inter-ExtraBold.ttf
+          weight: 800
+        - asset: fonts/Inter/Inter-Black.ttf
+          weight: 900
+
+flutter_intl:
+  enabled: true
