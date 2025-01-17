@@ -6,12 +6,14 @@ import 'package:collection/collection.dart';
 import 'package:expansion_widget/expansion_widget.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 
 // 🌎 Project imports:
 import '../../../../../generated/l10n.dart' as l;
 import '../../../../core/static/static.dart';
 import '../../../../widgets/widgets.dart';
+import '../../../../providers/_auth_provider.dart';
 
 part '_sidebar_item_model.dart';
 
@@ -101,7 +103,7 @@ class SideBarWidget extends StatelessWidget {
                       // ),
 
                       // Grouped Menus
-                      ..._groupedMenus.map(
+                      ..._groupedMenus(context).map(
                         (groupedMenu) => rf.ResponsiveRowColumnItem(
                           child: Padding(
                             padding:

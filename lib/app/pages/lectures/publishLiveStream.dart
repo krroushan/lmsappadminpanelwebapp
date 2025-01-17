@@ -29,13 +29,14 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
   bool _isMuted = false;
   bool _isStreaming = false;
   bool _isCameraOff = false;
-  int _currentQuality = 720;
+  int _currentQuality = 1080;
   bool _isChatVisible = false;
   RTCDataChannel? _dataChannel;
   String streamId = '';
 
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
 
+  int _unreadMessages = 0;
 
   @override
   void initState() {
@@ -110,6 +111,9 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
           'message': message.text,
           'isReceived': true,
         });
+        if (!_isChatVisible) {
+          _unreadMessages++;
+        }
       });
       _scrollToBottom();
     }
@@ -122,7 +126,12 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
   }
 
   void _toggleChat() {
-    setState(() => _isChatVisible = !_isChatVisible);
+    setState(() {
+      _isChatVisible = !_isChatVisible;
+      if (_isChatVisible) {
+        _unreadMessages = 0;
+      }
+    });
   }
 
   void _sendMessage() {
@@ -154,98 +163,64 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isStreaming ? Colors.red : Colors.grey,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isStreaming ? Icons.circle : Icons.circle_outlined,
-                    color: Colors.white,
-                    size: 12,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isStreaming ? 'LIVE' : 'OFF AIR',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Stream ID: ${widget.streamId}',
-                style: const TextStyle(fontSize: 14, color: Colors.white),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.chat, color: Colors.white),
-                if (_messages.isNotEmpty)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 12,
-                        minHeight: 12,
-                      ),
-                      child: Text(
-                        _messages.length.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            onPressed: _toggleChat,
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.hd,
-              color: _currentQuality == 720 ? Colors.blue : Colors.white,
-            ),
-            onPressed: _toggleQuality,
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: () => _showStreamInfo(),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
           // Video View
           RTCVideoView(
             _localRenderer,
             objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          ),
+          
+          // Live Status Indicator and Stream ID Container
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Live Status
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _isStreaming ? Colors.red : Colors.grey,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isStreaming ? Icons.circle : Icons.circle_outlined,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _isStreaming ? 'LIVE' : 'OFF AIR',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Stream ID
+                  Text(
+                    'Stream ID: ${widget.streamId}',
+                    style: const TextStyle(fontSize: 14, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
           ),
           
           // Stream Controls
@@ -260,91 +235,124 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
+                    Colors.white.withOpacity(0.2),
                     Colors.transparent,
                   ],
                 ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Left side - Info button
                   _buildControlButton(
-                    icon: _isMuted ? Icons.mic_off : Icons.mic,
-                    label: _isMuted ? 'Unmute' : 'Mute',
-                    onPressed: () {
-                      setState(() {
-                        _isMuted = !_isMuted;
-                        AntMediaFlutter.anthelper?.muteMic(_isMuted);
-                      });
-                    },
-                    isActive: !_isMuted,
+                    icon: Icons.info_outline,
+                    label: 'Info',
+                    onPressed: _showStreamInfo,
+                    isActive: true,
                   ),
+                  
+                  // Center - Main controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildControlButton(
+                        icon: _isMuted ? Icons.mic_off : Icons.mic,
+                        label: _isMuted ? 'Unmute' : 'Mute',
+                        onPressed: () {
+                          setState(() {
+                            _isMuted = !_isMuted;
+                            AntMediaFlutter.anthelper?.muteMic(_isMuted);
+                          });
+                        },
+                        isActive: !_isMuted,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildControlButton(
+                        icon: _isStreaming ? Icons.stop : Icons.play_arrow,
+                        label: _isStreaming ? 'Stop' : 'Start',
+                        onPressed: () {
+                          if (!_isStreaming) {
+                            AntMediaFlutter.anthelper?.publish(
+                              streamId,
+                              "",
+                              null,
+                              null,
+                              null,
+                              null,
+                              null,
+                            );
+                          } else {
+                            AntMediaFlutter.anthelper?.bye();
+                          }
+                        },
+                        isActive: _isStreaming,
+                        isMain: true,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildControlButton(
+                        icon: Icons.hd,
+                        label: 'Quality',
+                        onPressed: _toggleQuality,
+                        isActive: _currentQuality == 720,
+                      ),
+                    ],
+                  ),
+                  
+                  // Right side - Chat button
                   _buildControlButton(
-                    icon: _isStreaming ? Icons.stop : Icons.play_arrow,
-                    label: _isStreaming ? 'Stop' : 'Start',
-                    onPressed: () {
-                      if (!_isStreaming) {
-                        AntMediaFlutter.anthelper?.publish(
-                          "true",
-                          "true",
-                          null,
-                          null,
-                          null,
-                          null,
-                          null,
-                        );
-                      } else {
-                        AntMediaFlutter.anthelper?.bye();
-                      }
-                    },
-                    isActive: _isStreaming,
-                    isMain: true,
+                    icon: Icons.chat,
+                    label: 'Chat',
+                    onPressed: _toggleChat,
+                    isActive: _isChatVisible,
+                    badge: _unreadMessages > 0 ? _unreadMessages.toString() : null,
                   ),
-                  // _buildControlButton(
-                  //   icon: _isCameraOff ? Icons.videocam_off : Icons.videocam,
-                  //   label: _isCameraOff ? 'Camera On' : 'Camera Off',
-                  //   onPressed: _toggleCamera,
-                  //   isActive: !_isCameraOff,
-                  // ),
                 ],
               ),
             ),
           ),
           
-          // Chat overlay
+          // Chat overlay (updated positioning and styling)
           if (_isChatVisible)
             Positioned(
               right: 16,
-              top: 16,
+              bottom: 100,
               child: Card(
-                color: Colors.black.withOpacity(0.8),
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: Colors.black87,
                 child: SizedBox(
-                  width: 300,
-                  height: 400,
+                  width: 320,
+                  height: 450,
                   child: Column(
                     children: [
-                      // Chat header
+                      // Chat header with updated styling
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.1),
-                            ),
-                          ),
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Live Chat',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                const Icon(Icons.chat, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Live Chat',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white),
+                              icon: const Icon(Icons.close, color: Colors.white70),
                               onPressed: _toggleChat,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -352,36 +360,57 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
                           ],
                         ),
                       ),
-                      // Chat messages
+                      // Chat messages with improved styling
                       Expanded(
                         child: ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           itemCount: _messages.length,
                           itemBuilder: (context, index) {
                             final message = _messages[index];
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: message['isReceived']
-                                      ? Colors.white.withOpacity(0.1)
-                                      : Colors.blue.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  message['message'],
-                                  style: const TextStyle(color: Colors.white),
+                              child: Align(
+                                alignment: message['isReceived'] 
+                                    ? Alignment.centerLeft 
+                                    : Alignment.centerRight,
+                                child: Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.of(context).size.width * 0.6,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: message['isReceived']
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.blue.shade700,
+                                    borderRadius: BorderRadius.circular(16).copyWith(
+                                      bottomRight: message['isReceived'] ? Radius.circular(16) : Radius.circular(4),
+                                      bottomLeft: message['isReceived'] ? Radius.circular(4) : Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    message['message'],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
                           },
                         ),
                       ),
-                      // Message input
+                      // Message input with improved styling
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -390,23 +419,30 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
                                 style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: 'Type a message...',
-                                  hintStyle: const TextStyle(color: Colors.white70),
+                                  hintStyle: TextStyle(color: Colors.white60),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(24),
+                                    borderSide: BorderSide.none,
                                   ),
-                                  fillColor: Colors.white24,
+                                  fillColor: Colors.white12,
                                   filled: true,
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
-                                    vertical: 8,
+                                    vertical: 10,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.send, color: Colors.white),
-                              onPressed: _sendMessage,
+                            Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.blue,
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                                onPressed: _sendMessage,
+                              ),
                             ),
                           ],
                         ),
@@ -427,29 +463,54 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
     required VoidCallback onPressed,
     bool isActive = true,
     bool isMain = false,
+    String? badge,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          height: isMain ? 64 : 48,
-          width: isMain ? 64 : 48,
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: EdgeInsets.zero,
-              backgroundColor: isMain
-                  ? (isActive ? Colors.red : Colors.green)
-                  : (isActive ? Colors.white24 : Colors.white12),
+        Stack(
+          children: [
+            Container(
+              height: isMain ? 64 : 48,
+              width: isMain ? 64 : 48,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: EdgeInsets.zero,
+                  backgroundColor: isMain
+                      ? (isActive ? Colors.red : Colors.green)
+                      : (isActive ? Colors.white24 : Colors.white12),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: isMain ? 32 : 24,
+                ),
+              ),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: isMain ? 32 : 24,
-            ),
-          ),
+            if (badge != null)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         Text(
           label,

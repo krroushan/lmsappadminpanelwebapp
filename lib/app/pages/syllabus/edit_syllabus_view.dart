@@ -21,14 +21,14 @@ import '../../core/helpers/field_styles/field_styles.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:logger/logger.dart';
 
-class EditSubjectView extends StatefulWidget {
-  const EditSubjectView({super.key});
+class EditSyllabusView extends StatefulWidget {
+  const EditSyllabusView({super.key});
 
   @override
-  State<EditSubjectView> createState() => _EditSubjectViewState();
+  State<EditSyllabusView> createState() => _EditSyllabusViewState();
 }
 
-class _EditSubjectViewState extends State<EditSubjectView> {
+class _EditSyllabusViewState extends State<EditSyllabusView> {
   var logger = Logger();
 
   final browserDefaultFormKey = GlobalKey<FormState>();

@@ -191,9 +191,16 @@ class _AddStudyMaterialViewState extends State<AddStudyMaterialView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
+    // Set teacher ID if user is a teacher
+    if (authProvider.getRole == 'teacher') {
+      _teacherId = authProvider.getUserId;
+    }
     _fetchClassList();
     _fetchSubjectList();
-    _fetchTeacherList();
+    // Only fetch teacher list if user is not a teacher
+    if (authProvider.getRole != 'teacher') {
+      _fetchTeacherList();
+    }
   }
 
 // class service
@@ -251,6 +258,9 @@ class _AddStudyMaterialViewState extends State<AddStudyMaterialView> {
       ],
       defaultValue: const _SizeInfo(),
     ).value;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isTeacher = authProvider.getRole == 'teacher';
 
     return Scaffold(
       body: ListView(
@@ -416,7 +426,7 @@ class _AddStudyMaterialViewState extends State<AddStudyMaterialView> {
                   ),
 
                    // Teachers
-                  ResponsiveGridCol(
+                  if (!isTeacher) ResponsiveGridCol(
                     lg: 4,
                     md: 6,
                     child: Padding(

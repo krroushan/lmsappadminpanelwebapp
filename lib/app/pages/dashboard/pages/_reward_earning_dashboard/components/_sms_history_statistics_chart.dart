@@ -19,21 +19,16 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
     final lang = l.S.of(context);
     final _mqSize = MediaQuery.sizeOf(context);
 
-    final _withdrawColor = _theme.colorScheme.primary;
+    final _presentColor = _theme.colorScheme.primary;
 
     final _titles = {
-      1: lang.Jan,
-      2: lang.Feb,
-      3: lang.Mar,
-      4: lang.Apr,
-      5: lang.May,
-      6: lang.Jun,
-      7: lang.Jul,
-      8: lang.Aug,
-      9: lang.Sept,
-      10: lang.Oct,
-      11: lang.Nov,
-      12: lang.Dec,
+      1: 'Sat',
+      2: 'Sun',
+      3: 'Mon',
+      4: 'Tue',
+      5: 'Wed',
+      6: 'Thu',
+      7: 'Fri',
     };
 
     return Column(
@@ -45,11 +40,10 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '● ',
-                    style: TextStyle(color: _withdrawColor),
+                    style: TextStyle(color: _presentColor),
                   ),
                   TextSpan(
-                   // text: "Withdraw: ",
-                    text: "${lang.withdraw}: ",
+                    text: "Total Present: ",
                     style: TextStyle(
                       color: _isDark
                           ? _theme.colorScheme.onPrimaryContainer
@@ -57,7 +51,7 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: " \$10,000.00",
+                    text: " 348",
                     style: TextStyle(
                       color: _isDark
                           ? _theme.colorScheme.onPrimaryContainer
@@ -76,9 +70,9 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
           child: LineChart(
             LineChartData(
               minX: 1,
-              maxX: 12,
+              maxX: 7,
               minY: 0,
-              maxY: 80100,
+              maxY: 100,
               gridData: FlGridData(
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (value) => FlLine(
@@ -110,9 +104,7 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                   maxContentWidth: 240,
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((item) {
-                      final _value = NumberFormat.compactCurrency(
-                        decimalDigits: 4,
-                        symbol: '',
+                      final _value = NumberFormat.compact(
                         locale: AppLocale.defaultLocale.countryCode,
                       ).format(item.bar.spots[item.spotIndex].y);
 
@@ -122,20 +114,17 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                         textAlign: TextAlign.start,
                         children: [
                           TextSpan(
-                            text: ' ${_titles[item.spotIndex + 1]} 2024\n',
+                            text: ' ${_titles[item.spotIndex + 1]}\n',
                             style: const TextStyle(
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-
-                          /// Text Dot Indicator [used for the replacement of a circle widget. due to the limitation of fl_chart package, LineTooltipItem class doesn't support a widget span]
                           TextSpan(
                             text: '● ',
                             style: TextStyle(color: item.bar.color),
                           ),
                           TextSpan(
-                            //text: "Withdraw:",
-                            text: "${lang.withdraw}:",
+                            text: "Present:",
                             style: TextStyle(
                               color: _isDark
                                   ? _theme.colorScheme.onPrimaryContainer
@@ -143,7 +132,7 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: " $_value",
+                            text: " $_value%",
                             style: TextStyle(
                               color: _isDark
                                   ? _theme.colorScheme.onPrimaryContainer
@@ -166,23 +155,18 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
               lineBarsData: [
                 LineChartBarData(
                   spots: const [
-                    FlSpot(1, 0),
-                    FlSpot(2, 60000),
-                    FlSpot(3, 30000),
-                    FlSpot(4, 35000),
-                    FlSpot(5, 20000),
-                    FlSpot(6, 30000),
-                    FlSpot(7, 20500),
-                    FlSpot(8, 62000),
-                    FlSpot(9, 32000),
-                    FlSpot(10, 35000),
-                    FlSpot(11, 20000),
-                    FlSpot(12, 0),
+                    FlSpot(1, 85),
+                    FlSpot(2, 0),
+                    FlSpot(3, 88),
+                    FlSpot(4, 92),
+                    FlSpot(5, 86),
+                    FlSpot(6, 75),
+                    FlSpot(7, 90),
                   ],
                   isCurved: true,
                   barWidth: 2,
                   dotData: const FlDotData(show: false),
-                  color: _withdrawColor,
+                  color: _presentColor,
                 ),
               ],
               titlesData: FlTitlesData(
@@ -191,14 +175,15 @@ class SMSHistoryStatisticsLineChart extends StatelessWidget {
                 leftTitles: _getTitlesData(
                   context,
                   reservedSize: 40,
-                  interval: 20000,
+                  interval: 20,
                   getTitlesWidget: (value, titleMeta) {
                     const titlesMap = {
-                      0: '0',
-                      20000: '20k',
-                      40000: '40k',
-                      60000: '60k',
-                      80000: '80k',
+                      0: '0%',
+                      20: '20%',
+                      40: '40%',
+                      60: '60%',
+                      80: '80%',
+                      100: '100%',
                     };
 
                     return Text(

@@ -12,9 +12,11 @@ class BlogCardWidget extends StatefulWidget {
     this.className,
     this.board,
     this.subject,
+    this.lectureType,
     this.createdBy,
     this.createdDate,
     required this.onDelete,
+    this.streamId,
   });
   final String title;
   final String? description;
@@ -28,8 +30,8 @@ class BlogCardWidget extends StatefulWidget {
   final String? className;
   final String? subject;
   final Future<void> Function(String?) onDelete;  // Add this line
-  
-
+  final String? lectureType;
+  final String? streamId;
   @override
   State<BlogCardWidget> createState() => _BlogCardWidgetState();
 }
@@ -258,12 +260,21 @@ class _BlogCardWidgetState extends State<BlogCardWidget> {
                     icon: const Icon(Icons.delete),
                     color: Colors.red,
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // TODO: Implement play functionality
-                    },
-                    icon: const Icon(Icons.play_arrow),
-                    color: Colors.green,
+                  if (widget.lectureType == 'live')
+                    IconButton(
+                      onPressed: () {
+                        context.go('/dashboard/lectures/publish-live-stream/${widget.streamId}');
+                      },
+                      icon: const Icon(Icons.video_call),
+                      color: Colors.green,
+                    )
+                  else
+                    IconButton(
+                      onPressed: () {
+                        context.go('/dashboard/lectures/play-lecture/${widget.lectureId}');
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      color: Colors.green,
                   ),
                 ],
               ),

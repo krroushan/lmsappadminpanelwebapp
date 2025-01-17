@@ -10,15 +10,15 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 //import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
-class SMPDFViewer extends StatefulWidget {
+class ViewPDFSyllabus extends StatefulWidget {
   final String pdfUrl;
-  const SMPDFViewer({super.key, required this.pdfUrl});
+  const ViewPDFSyllabus({super.key, required this.pdfUrl});
 
   @override
-  State<SMPDFViewer> createState() => _SMPDFViewerState();
+  State<ViewPDFSyllabus> createState() => _ViewPDFSyllabusState();
 }
 
-class _SMPDFViewerState extends State<SMPDFViewer> {
+class _ViewPDFSyllabusState extends State<ViewPDFSyllabus> {
   var logger = Logger();
   String token = '';
 

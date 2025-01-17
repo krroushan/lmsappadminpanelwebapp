@@ -221,6 +221,8 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                             board: 'CBSE',
                             className: 'Class 10',
                             subject: 'Maths',
+                            lectureType: entry.value.lectureType,
+                            streamId: entry.value.streamId,
                             onDelete: _deleteLecture,
                           ),
                         ),

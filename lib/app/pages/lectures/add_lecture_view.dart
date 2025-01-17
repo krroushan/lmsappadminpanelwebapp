@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; 
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 // 📦 Package imports:
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
@@ -70,8 +71,8 @@ class _AddLectureViewState extends State<AddLectureView> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController recordingUrlController = TextEditingController();
+  final TextEditingController startDateController = TextEditingController();
   final TextEditingController startTimeController = TextEditingController();
-  final TextEditingController endTimeController = TextEditingController();
 
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -220,9 +221,16 @@ class _AddLectureViewState extends State<AddLectureView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
+    // Set teacher ID if user is a teacher
+    if (authProvider.getRole == 'teacher') {
+      _teacherId = authProvider.getUserId;
+    }
     _fetchClassList();
     _fetchSubjectList();
-    _fetchTeacherList();
+    // Only fetch teacher list if user is not a teacher
+    if (authProvider.getRole != 'teacher') {
+      _fetchTeacherList();
+    }
   }
 
 // class service
@@ -263,6 +271,9 @@ class _AddLectureViewState extends State<AddLectureView> {
   Widget build(BuildContext context) {
     const _lg = 12;
     const _md = 12;
+    final _theme = Theme.of(context);
+    final _inputFieldStyle = AcnooInputFieldStyles(context);
+
     final _dropdownStyle = AcnooDropdownStyle(context);
 
     final _sizeInfo = rf.ResponsiveValue<_SizeInfo>(
@@ -280,6 +291,9 @@ class _AddLectureViewState extends State<AddLectureView> {
       ],
       defaultValue: const _SizeInfo(),
     ).value;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isTeacher = authProvider.getRole == 'teacher';
 
     return Scaffold(
       body: ListView(
@@ -458,7 +472,7 @@ class _AddLectureViewState extends State<AddLectureView> {
                   ),
 
                    // Teachers
-                  ResponsiveGridCol(
+                  if (!isTeacher) ResponsiveGridCol(
                     lg: 4,
                     md: 6,
                     child: Padding(
@@ -494,6 +508,42 @@ class _AddLectureViewState extends State<AddLectureView> {
                     ),
                   ),
 
+                  // Start Date
+                  ResponsiveGridCol(
+                    lg: 4,
+                    md: 6,
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                      child: TextFieldLabelWrapper(
+                        labelText: 'Input Date',
+                        inputField: TextFormField(
+                          controller: startDateController,
+                          keyboardType: TextInputType.visiblePassword,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            hintText: 'mm/dd/yyyy',
+                            suffixIcon: const Icon(Icons.calendar_today, size: 20),
+                            suffixIconConstraints: _inputFieldStyle.iconConstraints,
+                          ),
+                          onTap: () async {
+                            DateTime? pickedDate = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                            );
+
+                            if (pickedDate != null) {
+                              setState(() {
+                                startDateController.text = DateFormat('MM/dd/yyyy').format(pickedDate);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
 // date and time picker for live lecture start time and end time
 // start time
                   ResponsiveGridCol(
@@ -505,9 +555,28 @@ class _AddLectureViewState extends State<AddLectureView> {
                         labelText: 'Start Time',
                         inputField: TextFormField(
                           controller: startTimeController,
-                          decoration: const InputDecoration(
+                          readOnly: true,
+                          decoration: InputDecoration(
                             hintText: 'Select Start Time',
+                            suffixIcon: const Icon(Icons.access_time, size: 20),
+                            suffixIconConstraints: _inputFieldStyle.iconConstraints,
                           ),
+                          onTap: () async {
+                            TimeOfDay? pickedTime = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+
+                            if (pickedTime != null) {
+                              setState(() {
+                                // Format time to 12-hour format with AM/PM
+                                final hour = pickedTime.hourOfPeriod;
+                                final minute = pickedTime.minute.toString().padLeft(2, '0');
+                                final period = pickedTime.period == DayPeriod.am ? 'AM' : 'PM';
+                                startTimeController.text = '$hour:$minute $period';
+                              });
+                            }
+                          },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please select start time';
@@ -519,67 +588,6 @@ class _AddLectureViewState extends State<AddLectureView> {
                       ),
                     ),
                   ),
-
-// end time
-                  ResponsiveGridCol(
-                    lg: 4,
-                    md: 6,
-                    child: Padding(
-                      padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
-                      child: TextFieldLabelWrapper(
-                        labelText: 'End Time',
-                        inputField: TextFormField(
-                          controller: endTimeController,
-                          decoration: const InputDecoration(
-                            hintText: 'Select End Time',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select end time';
-                            }
-                            return null;
-                          },
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                        ),
-                      ),
-                    ),
-                  ),
-
-
-                //  ResponsiveGridCol(
-                //    lg: 4,
-                //    md: 6,
-                //    child: Padding(
-                //      padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
-                //      child: TextFieldLabelWrapper(
-                //        labelText: 'Start Time',
-                //        inputField: DateTimePicker(
-                //          type: DateTimePickerType.dateTime,
-                //          decoration: const InputDecoration(
-                //            hintText: 'Select Start Time',
-                //          ),
-                //        ),
-                //      ),
-                //    ),
-                //  ),
-
-                 // End Time Picker
-                //  ResponsiveGridCol(
-                //    lg: 4,
-                //    md: 6,
-                //    child: Padding(
-                //      padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
-                //      child: TextFieldLabelWrapper(
-                //        labelText: 'End Time',
-                //        inputField: DateTimePicker(
-                //          type: DateTimePickerType.dateTime,
-                //          decoration: const InputDecoration(
-                //            hintText: 'Select End Time',
-                //          ),
-                //        ),
-                //      ),
-                //    ),
-                //  ),
 
 
                   // Lecture Thumbnail
@@ -794,8 +802,8 @@ class _AddLectureViewState extends State<AddLectureView> {
                                   _subjectId, 
                                   _teacherId, 
                                   lectureType,
+                                  startDateController.text,
                                   startTimeController.text,
-                                  endTimeController.text
                                 );
                           }
                         },
@@ -823,8 +831,8 @@ class _AddLectureViewState extends State<AddLectureView> {
     titleController.dispose();
     descriptionController.dispose();
     recordingUrlController.dispose();
+    startDateController.dispose();
     startTimeController.dispose();
-    endTimeController.dispose();
     super.dispose();
   }
 }

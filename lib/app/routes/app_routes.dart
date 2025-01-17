@@ -18,7 +18,6 @@ import '../pages/admins/admin_list_view.dart';
 import '../pages/admins/add_admin_view.dart';
 import '../pages/admins/edit_admin_view.dart';
 import '../pages/my_dashboard/dashboard_view.dart';
-import '../pages/lectures/lecture_list_view.dart';
 import '../pages/subjects/subject_list_view.dart';
 import '../pages/subjects/add_subject_view.dart';
 import '../pages/lectures/add_lecture_view.dart';
@@ -34,6 +33,18 @@ import '../pages/boards/add_board_view.dart';
 import '../pages/boards/board_list_view.dart';
 import '../pages/students/view_student_view.dart';
 import '../pages/lectures/lecture_card_list_view.dart';
+import '../pages/syllabus/syllabus_list_view.dart';
+import '../pages/syllabus/add_syllabus_view.dart';
+import '../pages/syllabus/edit_syllabus_view.dart';
+import '../pages/syllabus/view_pdf_syllabus_view.dart';
+import '../pages/schedule/view_schedule_view.dart';
+import '../pages/schedule/add_schedule_view.dart';
+import '../pages/schedule/schedules_list_view.dart';
+import '../pages/dashboard/pages/_influencer_admin_dashboard/_influencer_admin_dashboard.dart';
+import '../pages/dashboard/pages/_erp_admin_dashboard/_erp_admin_dashboard.dart';
+import '../pages/dashboard/pages/_hrm_admin_dashboard/_hrm_admin_dashboard.dart';
+import '../pages/dashboard/pages/_pos_admin_dashboard/_pos_admin_dashboard.dart';
+import '../pages/dashboard/pages/_reward_earning_dashboard/_reward_earning_dashboard.dart';
 abstract class AcnooAppRoutes {
   //--------------Navigator Keys--------------//
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -48,6 +59,7 @@ abstract class AcnooAppRoutes {
       final authProvider = context.read<AuthProvider>();
       await authProvider.checkAuthentication();
       final isAuthenticated = authProvider.isAuthenticated;
+      final userRole = authProvider.getRole;
 
       // If the user is not authenticated, redirect to login
       if (!isAuthenticated && state.fullPath != '/') {
@@ -57,6 +69,19 @@ abstract class AcnooAppRoutes {
       // If the user is authenticated and tries to access '/login', redirect to the default route
       if (isAuthenticated && state.fullPath == '/') {
         return '/dashboard';
+      }
+
+      // Role-based route restrictions
+      if (isAuthenticated) {
+        final path = state.fullPath ?? '';
+
+        // Teacher restrictions
+        if (userRole == 'teacher') {
+          if (path.contains('/dashboard/admins') ||
+              path.contains('/dashboard/teachers/add-teacher')) {
+            return '/dashboard';
+          }
+        }
       }
 
       // No redirect if conditions are not met
@@ -98,12 +123,19 @@ abstract class AcnooAppRoutes {
             ),
           ),
 
-          GoRoute(
-            path: '/card',
+
+GoRoute(
+            path: '/dashboard/influencer-admin',
             pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: ProjectsView(),
+              child: RewardEarningAdminDashboard(),
             ),
           ),
+          // GoRoute(
+          //   path: '/card',
+          //   pageBuilder: (context, state) => const NoTransitionPage<void>(
+          //     child: ProjectsView(),
+          //   ),
+          // ),
 
           // Lectures Route
           GoRoute(
@@ -148,7 +180,7 @@ abstract class AcnooAppRoutes {
               GoRoute(
                 path: 'play-lecture/:lectureId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
-                  child: LectureVideoPlayer2(videoUrl: state.pathParameters['lectureId'] ?? ''),
+                  child: LectureVideoPlayer2(lectureId: state.pathParameters['lectureId'] ?? ''),
                 ),
               ),
             ],
@@ -249,6 +281,87 @@ abstract class AcnooAppRoutes {
                 path: 'student-profile/:studentId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
                   child: ViewStudentView(studentId: state.pathParameters['studentId'] ?? ''),
+                ),
+              ),
+            ],
+          ),
+
+          // Schedule Route
+          // GoRoute(
+          //   path: '/dashboard/schedule',
+          //   pageBuilder: (context, state) => const NoTransitionPage<void>(
+          //     child: CalendarView(),
+          //   ),
+          // ),
+
+          GoRoute(
+            path: '/dashboard/schedule',
+            redirect: (context, state) async {
+              if (state.fullPath == '/dashboard/schedule') {
+                return '/dashboard/schedule/all-schedule';
+              }
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: 'all-schedule',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: SchedulesListView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-schedule',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AddScheduleView(),
+                ),
+              ),
+              // GoRoute(
+              //   path: 'edit-schedule',
+              //   pageBuilder: (context, state) => const NoTransitionPage<void>(
+              //     child: EditScheduleView(),
+              //   ),
+              // ),
+              GoRoute(
+                path: 'view-schedule',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: ViewScheduleView(),
+                ),
+              ),
+            ],
+          ),
+
+          // Syllabus Route
+          GoRoute(
+            path: '/dashboard/syllabus',
+            redirect: (context, state) async {
+              if (state.fullPath == '/dashboard/syllabus') {
+                return '/dashboard/syllabus/all-syllabus';
+              }
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: 'all-syllabus',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: SyllabusListView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-syllabus',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AddSyllabusView(),
+                ),
+              ),
+              GoRoute(
+                path: 'edit-syllabus',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: EditSyllabusView(),
+                ),
+              ),
+              GoRoute(
+                path: 'view-syllabus/:syllabusId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: ViewPDFSyllabus(pdfUrl: state.pathParameters['syllabusId'] ?? ''),
                 ),
               ),
             ],
@@ -510,12 +623,12 @@ abstract class AcnooAppRoutes {
           ),
 
           //--------------Application Section--------------//
-          GoRoute(
-            path: '/calendar',
-            pageBuilder: (context, state) => const NoTransitionPage<void>(
-              child: CalendarView(),
-            ),
-          ),
+          // GoRoute(
+          //   path: '/calendar',
+          //   pageBuilder: (context, state) => const NoTransitionPage<void>(
+          //     child: CalendarView(),
+          //   ),
+          // ),
           GoRoute(
             path: '/chat',
             pageBuilder: (context, state) => const NoTransitionPage<void>(

@@ -33,6 +33,8 @@ class _SigninViewState extends State<SigninView> {
   // Create controllers for username and password
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  // Add new state variable for selected role
+  String selectedRole = 'admin'; // Default to admin
 
   Future<void> _handleLogin() async {
     setState(() {
@@ -43,8 +45,13 @@ class _SigninViewState extends State<SigninView> {
     final String username = usernameController.text; // Get username input
     final String password = passwordController.text; // Get password input
 
+    // Modify API URL based on selected role
+    final String loginEndpoint = selectedRole == 'admin' 
+        ? '/admin/login'
+        : '/teacher/login';
+
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/admin/login'),
+      Uri.parse('${ApiConfig.baseUrl}$loginEndpoint'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'username': username, 'password': password}),
     );
@@ -56,17 +63,17 @@ class _SigninViewState extends State<SigninView> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final token = data['token'];
-      final admin = data['admin'];
-      final name = admin['fullName'];
-      final role = admin['role'];
-      final userId = admin['_id'];
+      final user = data['admin'] ?? data['teacher'];
+      final name = user['fullName'];
+      final role = user['role'];
+      final userId = user['_id'];
       print("name: $name");
       print("role: $role");
       print("userId: $userId");
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.login(token, name, role, userId);
 
-      context.go('/dashboard/students/all-students');
+      context.go('/dashboard');
       print(data['message']);
     } else {
       // Update the error message
@@ -120,7 +127,7 @@ class _SigninViewState extends State<SigninView> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Admin Login',
+                                    '${selectedRole == 'admin' ? 'Admin' : 'Teacher'} Login',
                                     style: _theme.textTheme.headlineSmall
                                         ?.copyWith(
                                       fontWeight: FontWeight.w700,
@@ -133,6 +140,35 @@ class _SigninViewState extends State<SigninView> {
                                     errorMessage,
                                     style: _theme.textTheme.bodyLarge?.copyWith(
                                       color: Colors.red,
+                                    ),
+                                  ),
+
+                                  // Add this widget before the email field
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 20),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        ChoiceChip(
+                                          label: const Text('Admin'),
+                                          selected: selectedRole == 'admin',
+                                          onSelected: (selected) {
+                                            if (selected) {
+                                              setState(() => selectedRole = 'admin');
+                                            }
+                                          },
+                                        ),
+                                        const SizedBox(width: 16),
+                                        ChoiceChip(
+                                          label: const Text('Teacher'),
+                                          selected: selectedRole == 'teacher',
+                                          onSelected: (selected) {
+                                            if (selected) {
+                                              setState(() => selectedRole = 'teacher');
+                                            }
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
 
