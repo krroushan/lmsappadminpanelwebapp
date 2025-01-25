@@ -40,17 +40,19 @@ class _AddStudentViewState extends State<AddStudentView> {
   late final _dobController = TextEditingController();
   final _nameController = TextEditingController();
   final _fatherNameController = TextEditingController();
-  final _fatherOccupationController = TextEditingController();
   final _motherNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _rollNoController = TextEditingController();
   final _adhaarNoController = TextEditingController();
   final _passwordController = TextEditingController();
-  int _gender = 1;
-  int _category = 1;
-  int _disabilityStatus = 1;
-  int _typeOfInstitution = 1;
+  final _schoolIdRollNumberController = TextEditingController();
+  final _schoolInstitutionNameController = TextEditingController();
+  String _fatherOccupation = "";
+  String _gender = "";
+  String _category = "";
+  String _disabilityStatus = "";
+  String _typeOfInstitution = "";
   String _classId = "";
   String _boardId = "";
 
@@ -64,13 +66,14 @@ class _AddStudentViewState extends State<AddStudentView> {
     _dobController.dispose();
     _nameController.dispose();
     _fatherNameController.dispose();
-    _fatherOccupationController.dispose();
     _motherNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _rollNoController.dispose();
     _adhaarNoController.dispose();
     _passwordController.dispose();
+    _schoolIdRollNumberController.dispose();
+    _schoolInstitutionNameController.dispose();
     super.dispose();
   }
 
@@ -107,8 +110,45 @@ class _AddStudentViewState extends State<AddStudentView> {
   }
 
   // new method to create a fake student and send to API
-  Future<void> _createStudent(String rollNo, String fullName, String email,
-      String password, String classId) async {
+  Future<void> _createStudent(
+    String rollNo, 
+    String fullName, 
+    String email,
+      String password, 
+      String classId, 
+      String boardId,
+      String schoolIdRollNumber, 
+      String schoolInstitutionName,
+      String fatherName,
+      String motherName,
+      String phoneNumber,
+      String alternatePhoneNumber,
+      String adharNumber,
+      String dateOfBirth,
+      String gender,
+      String category,
+      String disability,
+      String typeOfInstitution,
+      String fatherOccupation,
+      ) async {
+        print("Gender: $gender");
+        print("Category: $category");
+        print("Disability: $disability");
+        print("Type of Institution: $typeOfInstitution");
+        print("fatherName: $fatherName");
+        print("motherName: $motherName");
+        print("phoneNumber: $phoneNumber");
+        print("alternatePhoneNumber: $alternatePhoneNumber");
+        print("adharNumber: $adharNumber");
+        print("dateOfBirth: $dateOfBirth");
+        print("schoolIdRollNumber: $schoolIdRollNumber");
+        print("schoolInstitutionName: $schoolInstitutionName");
+        print("rollNo: $rollNo");
+        print("fullName: $fullName");
+        print("email: $email");
+        print("password: $password");
+        print("classId: $classId");
+        print("boardId: $boardId");
     // Generate a fake student with valid data
     final studentData = StudentCreate.fromJson({
       "fullName": fullName,
@@ -116,6 +156,20 @@ class _AddStudentViewState extends State<AddStudentView> {
       "rollNo": rollNo,
       "password": password,
       "class": classId,
+      "board": boardId,
+      "schoolIdRollNumber": schoolIdRollNumber,
+      "schoolInstitutionName": schoolInstitutionName,
+      "fatherName": fatherName,
+      "motherName": motherName,
+      "phoneNumber": phoneNumber,
+      "alternatePhoneNumber": alternatePhoneNumber,
+      "adharNumber": adharNumber,
+      "dateOfBirth": dateOfBirth,
+      "gender": gender,
+      "category": category,
+      "disability": disability,
+      "typeOfInstitution": typeOfInstitution,
+      "fatherOccupation": fatherOccupation,
     });
 
     print("Student Data: ${studentData.toJson()}");
@@ -290,13 +344,24 @@ class _AddStudentViewState extends State<AddStudentView> {
                       validationMessage: 'Please enter father name'),
 
                   // Father's Occupation
-                  _buildTextFormField(
+                  _buildDropdownField(
                       lg: _lg,
                       md: _md,
                       label: 'Father\'s Occupation',
-                      controller: _fatherOccupationController,
-                      hint: 'Enter Father\'s Occupation',
-                      validationMessage: 'Please enter father occupation'),
+                      hint: 'Select Father\'s Occupation',
+                      items: const [
+                        DropdownMenuItem(value: 'Self Employed', child: Text('Self Employed')),
+                        DropdownMenuItem(value: 'Government', child: Text('Government')),
+                        DropdownMenuItem(value: 'Private', child: Text('Private')),
+                        DropdownMenuItem(value: 'Farmer', child: Text('Farmer')),
+                        DropdownMenuItem(value: 'Others', child: Text('Others')),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _fatherOccupation = value as String;
+                        });
+                      },
+                      dropdownStyle: _dropdownStyle),
 
                   // Mother Name
                   _buildTextFormField(
@@ -317,13 +382,22 @@ class _AddStudentViewState extends State<AddStudentView> {
                       validationMessage: 'Please enter email'),
 
                   // Phone
-                  _buildNumberFormField(
+                  _buildTextFormField(
                       lg: _lg,
                       md: _md,
                       label: 'Phone',
                       controller: _phoneController,
                       hint: 'Enter Student Phone Number',
                       validationMessage: 'Please enter phone number'),
+
+                  // Alternate Phone
+                  _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Alternate Phone',
+                      controller: _rollNoController,
+                      hint: 'Enter Student Alternate Phone Number',
+                      validationMessage: 'Please enter alternate phone number'),
 
                   //Ramaanya Roll Number
                   _buildTextFormField(
@@ -335,13 +409,22 @@ class _AddStudentViewState extends State<AddStudentView> {
                       validationMessage: 'Please enter roll number'),
 
                   //Adhaar Number
-                  _buildNumberFormField(
+                  _buildTextFormField(
                       lg: _lg,
                       md: _md,
                       label: 'Adhaar Number',
                       controller: _adhaarNoController,
                       hint: 'Enter Student Adhaar Number',
                       validationMessage: 'Please enter adhaar number'),
+
+                  //School ID/Roll Number
+                  _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'School ID/Roll Number',
+                      controller: _schoolIdRollNumberController,
+                      hint: 'Enter Student School ID/Roll Number',
+                      validationMessage: 'Please enter school id/roll number'),
 
                   //  Date of Birth
                   ResponsiveGridCol(
@@ -402,81 +485,90 @@ class _AddStudentViewState extends State<AddStudentView> {
 
                   // Gender
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Gender',
                       hint: 'Select Gender',
                       items: const [
-                        DropdownMenuItem(value: 1, child: Text('Male')),
-                        DropdownMenuItem(value: 2, child: Text('Female')),
+                        DropdownMenuItem(value: 'Male', child: Text('Male')),
+                        DropdownMenuItem(value: 'Female', child: Text('Female')),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _gender = value as int;
+                          _gender = value as String;
                         });
                       },
                       dropdownStyle: _dropdownStyle),
 
                   // Category
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Category',
                       hint: 'Select Category',
                       items: const [
-                        DropdownMenuItem(value: 1, child: Text('General')),
-                        DropdownMenuItem(value: 2, child: Text('OBC')),
-                        DropdownMenuItem(value: 3, child: Text('SC')),
-                        DropdownMenuItem(value: 4, child: Text('ST')),
+                        DropdownMenuItem(value: 'General', child: Text('General')),
+                        DropdownMenuItem(value: 'OBC', child: Text('OBC')),
+                        DropdownMenuItem(value: 'SC', child: Text('SC')),
+                        DropdownMenuItem(value: 'ST', child: Text('ST')),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _gender = value as int;
+                          _category = value as String;
                         });
                       },
                       dropdownStyle: _dropdownStyle),
 
                   // Disability Status
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Disability Status',
                       hint: 'Select Disability Status',
                       items: const [
-                        DropdownMenuItem(
-                            value: 1, child: Text('Orthopedically')),
-                        DropdownMenuItem(
-                            value: 2, child: Text('Visually Impaired')),
-                        DropdownMenuItem(value: 3, child: Text('Hearing')),
+                        DropdownMenuItem(value: 'Orthopedically', child: Text('Orthopedically')),
+                        DropdownMenuItem(value: 'Visually Impaired', child: Text('Visually Impaired')),
+                        DropdownMenuItem(value: 'Hearing', child: Text('Hearing')),
+                        DropdownMenuItem(value: 'None', child: Text('None')),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _gender = value as int;
+                          _disabilityStatus = value as String;
                         });
                       },
                       dropdownStyle: _dropdownStyle),
 
                   // Type of Institution
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Type of Institution',
                       hint: 'Select Type of Institution',
                       items: const [
-                        DropdownMenuItem(value: 1, child: Text('Government')),
-                        DropdownMenuItem(value: 2, child: Text('Private')),
+                        DropdownMenuItem(value: 'Government', child: Text('Government')),
+                        DropdownMenuItem(value: 'Private', child: Text('Private')),
                       ],
                       onChanged: (value) {
                         setState(() {
-                          _gender = value as int;
+                          _typeOfInstitution = value as String;
                         });
                       },
                       dropdownStyle: _dropdownStyle),
 
+
+                  // School/Institution Name
+                  _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'School/Institution Name',
+                      controller: _schoolInstitutionNameController,
+                      hint: 'Enter Student School/Institution Name',
+                      validationMessage: 'Please enter school/institution name'),
+
                   // Class
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Class',
                       hint: 'Select Class',
                       items: _classList
@@ -492,8 +584,8 @@ class _AddStudentViewState extends State<AddStudentView> {
 
                   // Board
                   _buildDropdownField(
-                      lg: 3,
-                      md: 3,
+                      lg: _lg,
+                      md: _md,
                       label: 'Board',
                       hint: 'Select Board',
                       items: _boardList
@@ -509,8 +601,8 @@ class _AddStudentViewState extends State<AddStudentView> {
 
                   //  Password Field
                   ResponsiveGridCol(
-                    lg: 3,
-                    md: 3,
+                    lg: _lg,
+                    md: _md,
                     child: Padding(
                       padding:
                           EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
@@ -597,8 +689,42 @@ class _AddStudentViewState extends State<AddStudentView> {
                     final password =
                         _passwordController.text; // Get the password
                     final classId = _classId; // Get the selected class
+                    final boardId = _boardId; // Get the selected board
+                    final schoolIdRollNumber = _schoolIdRollNumberController.text; // Get the school id/roll number
+                    final schoolInstitutionName = _schoolInstitutionNameController.text; // Get the school/institution name
+                    final fatherName = _fatherNameController.text; // Get the father name
+                    final motherName = _motherNameController.text; // Get the mother name
+                    final phoneNumber = _phoneController.text; // Get the phone number
+                    final alternatePhoneNumber = _rollNoController.text; // Get the alternate phone number
+                    final adharNumber = _adhaarNoController.text; // Get the adhar number
+                    final dateOfBirth = _dobController.text; // Get the date of birth
+                    final gender = _gender; // Get the gender
+                    final category = _category; // Get the category
+                    final disability = _disabilityStatus; // Get the disability status
+                    final typeOfInstitution = _typeOfInstitution; // Get the type of institution
+                    final fatherOccupation = _fatherOccupation; // Get the father occupation
 
-                    _createStudent(rollNo, fullName, email, password, classId);
+                    _createStudent(
+                      rollNo, 
+                      fullName, 
+                      email, 
+                      password, 
+                      classId, 
+                      boardId, 
+                      schoolIdRollNumber, 
+                      schoolInstitutionName, 
+                      fatherName, 
+                      motherName, 
+                      phoneNumber, 
+                      alternatePhoneNumber, 
+                      adharNumber, 
+                      dateOfBirth, 
+                      gender, 
+                      category, 
+                      disability, 
+                      typeOfInstitution,
+                      fatherOccupation
+                      );
                   }
                 },
                 child: const Text('Add Student'),

@@ -277,12 +277,11 @@ class _SubjectListViewState extends State<SubjectListView> {
       onPressed: () {
         setState(() {
           //_showFormDialog(context);
-          context.go('/dashboard/classes/add-class');
+          context.go('/dashboard/subjects/add-subject');
         });
       },
       label: Text(
-        lang.addNewUser,
-        //'Add New Student',
+        'Add New Subject',
         style: textTheme.bodySmall?.copyWith(
           color: AcnooAppColors.kWhiteColor,
           fontWeight: FontWeight.bold,

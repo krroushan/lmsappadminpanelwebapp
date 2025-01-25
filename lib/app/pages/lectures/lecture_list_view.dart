@@ -358,9 +358,9 @@ class _LectureListViewState extends State<LectureListView> {
               cells: [
                 DataCell(Text(index.toString())),
                 DataCell(Text(lectureInfo.title)),
-                DataCell(Text(lectureInfo.teacher.fullName)),
-                DataCell(Text(lectureInfo.subject.name)),
-                DataCell(Text(lectureInfo.classInfo.name)),
+                DataCell(Text(lectureInfo.teacher?.fullName ?? '')),
+                DataCell(Text(lectureInfo.subject?.name ?? '')),
+                DataCell(Text(lectureInfo.classInfo?.name ?? '')),
                 DataCell(
                   Row(
                     children: [

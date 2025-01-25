@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 // 📦 Package imports:
 import 'package:responsive_framework/responsive_framework.dart' as rf;
-import 'package:responsive_grid/responsive_grid.dart';
-
 // 🌎 Project imports:
 import '../../widgets/widgets.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-//import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../../core/api_service/study_material_service.dart';
 
 class SMPDFViewer extends StatefulWidget {
-  final String pdfUrl;
-  const SMPDFViewer({super.key, required this.pdfUrl});
+  final String smId;
+  const SMPDFViewer({super.key, required this.smId});
 
   @override
   State<SMPDFViewer> createState() => _SMPDFViewerState();
@@ -21,6 +20,9 @@ class SMPDFViewer extends StatefulWidget {
 class _SMPDFViewerState extends State<SMPDFViewer> {
   var logger = Logger();
   String token = '';
+  String pdfUrl = '';
+  final _pdfViewerController = PdfViewerController();
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -28,6 +30,19 @@ class _SMPDFViewerState extends State<SMPDFViewer> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
+    _fetchStudyMaterial();
+    logger.d('smId: ${widget.smId}');
+  }
+
+  Future<void> _fetchStudyMaterial() async {
+    final studyMaterialService = StudyMaterialService();
+    final studyMaterial = await studyMaterialService.fetchStudyMaterialById(widget.smId, token);
+    setState(() {
+      pdfUrl = 'https://apkobi.com/uploads/study-materials/pdfs/${studyMaterial.fileUrl}';
+      isLoading = false;
+    });
+    logger.d('studyMaterial: ${studyMaterial.fileUrl}');
+    logger.d('https://apkobi.com/uploads/study-materials/pdfs/$pdfUrl');
   }
 
   @override
@@ -54,12 +69,18 @@ class _SMPDFViewerState extends State<SMPDFViewer> {
     return Scaffold(
       body: Padding(
         padding: _sizeInfo.padding,
-        child: ShadowContainer(
-          headerText: 'Pdf Viewer',
-          // child: SfPdfViewer.network(
-          //   'https://pdfobject.com/pdf/sample.pdf',
-          // ),
-        ),
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : ShadowContainer(
+                headerText: 'Pdf Viewer',
+                child: SfPdfViewer.network(
+                  pdfUrl,
+                  controller: _pdfViewerController,
+                  onDocumentLoaded: (details) {
+                    logger.d('https://apkobi.com/uploads/study-materials/pdfs/$pdfUrl');
+                  },
+                ),
+              ),
       ),
     );
   }

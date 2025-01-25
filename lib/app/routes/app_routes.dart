@@ -45,6 +45,9 @@ import '../pages/dashboard/pages/_erp_admin_dashboard/_erp_admin_dashboard.dart'
 import '../pages/dashboard/pages/_hrm_admin_dashboard/_hrm_admin_dashboard.dart';
 import '../pages/dashboard/pages/_pos_admin_dashboard/_pos_admin_dashboard.dart';
 import '../pages/dashboard/pages/_reward_earning_dashboard/_reward_earning_dashboard.dart';
+import '../pages/study_material/update_study_material.dart';
+import '../pages/landing_page/home_page.dart';
+
 abstract class AcnooAppRoutes {
   //--------------Navigator Keys--------------//
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -62,12 +65,12 @@ abstract class AcnooAppRoutes {
       final userRole = authProvider.getRole;
 
       // If the user is not authenticated, redirect to login
-      if (!isAuthenticated && state.fullPath != '/') {
-        return '/';
-      }
+      // if (!isAuthenticated && state.fullPath != '/') {
+      //   return '/';
+      // }
 
       // If the user is authenticated and tries to access '/login', redirect to the default route
-      if (isAuthenticated && state.fullPath == '/') {
+      if (isAuthenticated && state.fullPath == '/login') {
         return '/dashboard';
       }
 
@@ -88,7 +91,7 @@ abstract class AcnooAppRoutes {
       return null;
     },
     routes: [
-      // Landing Route Handler
+      //Landing Route Handler
       // GoRoute(
       //   path: _initialPath,
       //   redirect: (context, state) async {
@@ -100,9 +103,16 @@ abstract class AcnooAppRoutes {
 
       // Login Route
       GoRoute(
-        path: '/',
+        path: '/login',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SigninView(),
+        ),
+      ),
+
+      GoRoute(
+        path: '/',
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: HomePage(),
         ),
       ),
 
@@ -215,9 +225,15 @@ GoRoute(
               //   ),
               // ),
               GoRoute(
+                path: 'update-study-material/:studyMaterialId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: UpdateStudyMaterialView(studyMaterialId: state.pathParameters['studyMaterialId'] ?? ''),
+                ),
+              ),
+              GoRoute(
                 path: 'view-pdf/:studyMaterialId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
-                  child: SMPDFViewer(pdfUrl: state.pathParameters['studyMaterialId'] ?? ''),
+                  child: SMPDFViewer(smId: state.pathParameters['studyMaterialId'] ?? ''),
                 ),
               ),
             ],
@@ -353,15 +369,15 @@ GoRoute(
                 ),
               ),
               GoRoute(
-                path: 'edit-syllabus',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: EditSyllabusView(),
+                path: 'edit-syllabus/:syllabusId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditSyllabusView(syllabusId: state.pathParameters['syllabusId'] ?? ''),
                 ),
               ),
               GoRoute(
                 path: 'view-syllabus/:syllabusId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
-                  child: ViewPDFSyllabus(pdfUrl: state.pathParameters['syllabusId'] ?? ''),
+                  child: ViewPDFSyllabus(syllabusId: state.pathParameters['syllabusId'] ?? ''),
                 ),
               ),
             ],

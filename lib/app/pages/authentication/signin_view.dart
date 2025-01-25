@@ -90,7 +90,7 @@ class _SigninViewState extends State<SigninView> {
 
   @override
   Widget build(BuildContext context) {
-    final lang=l.S.of(context);
+    final lang = l.S.of(context);
     final _theme = Theme.of(context);
 
     final _screenWidth = MediaQuery.sizeOf(context).width;
@@ -100,143 +100,145 @@ class _SigninViewState extends State<SigninView> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        body: Row(
-          children: [
-            Flexible(
-              child: Container(
-                constraints: BoxConstraints(
-                  minWidth: _desktopView ? (_screenWidth * 0.45) : _screenWidth,
-                ),
-                decoration: BoxDecoration(
-                  color: _theme.colorScheme.primaryContainer,
-                ),
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      // Header With Logo
-                      const CompanyHeaderWidget(),
+        body: isLoading // Show loading indicator if loading
+            ? Center(child: CircularProgressIndicator())
+            : Row(
+                children: [
+                  Flexible(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        minWidth: _desktopView ? (_screenWidth * 0.45) : _screenWidth,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _theme.colorScheme.primaryContainer,
+                      ),
+                      child: SafeArea(
+                        child: Column(
+                          children: [
+                            // Header With Logo
+                            const CompanyHeaderWidget(),
 
-                      // Sign in form
-                      Flexible(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 375),
-                          child: Center(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '${selectedRole == 'admin' ? 'Admin' : 'Teacher'} Login',
-                                    style: _theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  //error message like login failed
-                                  Text(
-                                    errorMessage,
-                                    style: _theme.textTheme.bodyLarge?.copyWith(
-                                      color: Colors.red,
-                                    ),
-                                  ),
-
-                                  // Add this widget before the email field
-                                  Container(
-                                    margin: const EdgeInsets.only(bottom: 20),
-                                    child: Row(
+                            // Sign in form
+                            Flexible(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 375),
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        ChoiceChip(
-                                          label: const Text('Admin'),
-                                          selected: selectedRole == 'admin',
-                                          onSelected: (selected) {
-                                            if (selected) {
-                                              setState(() => selectedRole = 'admin');
-                                            }
-                                          },
+                                        Text(
+                                          '${selectedRole == 'admin' ? 'Admin' : 'Teacher'} Login',
+                                          style: _theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
-                                        const SizedBox(width: 16),
-                                        ChoiceChip(
-                                          label: const Text('Teacher'),
-                                          selected: selectedRole == 'teacher',
-                                          onSelected: (selected) {
-                                            if (selected) {
-                                              setState(() => selectedRole = 'teacher');
-                                            }
-                                          },
+                                        const SizedBox(height: 10),
+
+                                        //error message like login failed
+                                        Text(
+                                          errorMessage,
+                                          style: _theme.textTheme.bodyLarge?.copyWith(
+                                            color: Colors.red,
+                                          ),
+                                        ),
+
+                                        // Add this widget before the email field
+                                        Container(
+                                          margin: const EdgeInsets.only(bottom: 20),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              ChoiceChip(
+                                                label: const Text('Admin'),
+                                                selected: selectedRole == 'admin',
+                                                onSelected: (selected) {
+                                                  if (selected) {
+                                                    setState(() => selectedRole = 'admin');
+                                                  }
+                                                },
+                                              ),
+                                              const SizedBox(width: 16),
+                                              ChoiceChip(
+                                                label: const Text('Teacher'),
+                                                selected: selectedRole == 'teacher',
+                                                onSelected: (selected) {
+                                                  if (selected) {
+                                                    setState(() => selectedRole = 'teacher');
+                                                  }
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        // Email Field
+                                        TextFieldLabelWrapper(
+                                          labelText: 'Email',
+                                          inputField: TextFormField(
+                                            controller: usernameController,
+                                            decoration:  const InputDecoration(
+                                              hintText: 'Enter your email address',
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+
+                                        // Password Field
+                                        TextFieldLabelWrapper(
+                                          labelText: 'Password',
+                                          inputField: TextFormField(
+                                            controller: passwordController,
+                                            obscureText: !showPassword,
+                                            decoration: InputDecoration(
+                                              //hintText: 'Enter your password',
+                                              hintText:lang.enterYourPassword,
+                                              suffixIcon: IconButton(
+                                                onPressed: () => setState(
+                                                  () => showPassword = !showPassword,
+                                                ),
+                                                icon: Icon(
+                                                  showPassword
+                                                      ? FeatherIcons.eye
+                                                      : FeatherIcons.eyeOff,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+
+                                        // Submit Button
+                                        SizedBox(
+                                          width: double.maxFinite,
+                                          child: ElevatedButton(
+                                            onPressed: isLoading // Disable button when loading
+                                                ? null
+                                                : () {
+                                                    _handleLogin(); // Call login with parameters
+                                                  },
+                                            child: isLoading // Show loading indicator
+                                                ? const CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                  )
+                                                : Text(lang.signIn),
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-
-                                  // Email Field
-                                  TextFieldLabelWrapper(
-                                    labelText: 'Email',
-                                    inputField: TextFormField(
-                                      controller: usernameController,
-                                      decoration:  const InputDecoration(
-                                        hintText: 'Enter your email address',
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Password Field
-                                  TextFieldLabelWrapper(
-                                    labelText: 'Password',
-                                    inputField: TextFormField(
-                                      controller: passwordController,
-                                      obscureText: !showPassword,
-                                      decoration: InputDecoration(
-                                        //hintText: 'Enter your password',
-                                        hintText:lang.enterYourPassword,
-                                        suffixIcon: IconButton(
-                                          onPressed: () => setState(
-                                            () => showPassword = !showPassword,
-                                          ),
-                                          icon: Icon(
-                                            showPassword
-                                                ? FeatherIcons.eye
-                                                : FeatherIcons.eyeOff,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Submit Button
-                                  SizedBox(
-                                    width: double.maxFinite,
-                                    child: ElevatedButton(
-                                      onPressed: isLoading // Disable button when loading
-                                          ? null
-                                          : () {
-                                              _handleLogin(); // Call login with parameters
-                                            },
-                                      child: isLoading // Show loading indicator
-                                          ? const CircularProgressIndicator(
-                                              color: Colors.white,
-                                            )
-                                          : Text(lang.signIn),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

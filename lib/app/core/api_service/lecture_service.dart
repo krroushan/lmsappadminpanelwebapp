@@ -70,8 +70,8 @@ class LectureService {
     String classId, 
     String subjectId, 
     String teacherId, 
+    String startDate, 
     String startTime, 
-    String endTime, 
     String token,
     ) async {
 
@@ -101,8 +101,8 @@ class LectureService {
     request.fields['class'] = classId;
     request.fields['subject'] = subjectId;
     request.fields['teacher'] = teacherId;
+    request.fields['startDate'] = startDate;
     request.fields['startTime'] = startTime;
-    request.fields['endTime'] = endTime;
 
     // Add the image file to the request
     request.files.add(http.MultipartFile.fromBytes(
@@ -149,8 +149,8 @@ class LectureService {
     String classId, 
     String subjectId, 
     String teacherId, 
+    String startDate, 
     String startTime, 
-    String endTime, 
     String token,
     ) async {
 
@@ -180,8 +180,8 @@ class LectureService {
     request.fields['class'] = classId;
     request.fields['subject'] = subjectId;
     request.fields['teacher'] = teacherId;
+    request.fields['startDate'] = startDate;
     request.fields['startTime'] = startTime;
-    request.fields['endTime'] = endTime;
     request.fields['recordingUrl'] = '';
 
     // Add the image file to the request

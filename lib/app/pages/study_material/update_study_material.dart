@@ -21,20 +21,20 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:logger/logger.dart';
 import '../../models/subject/subject.dart';
 import '../../models/teacher/teacher.dart';
-import '../../models/board/board.dart';
 import '../../core/api_service/subject_service.dart';
 import '../../core/api_service/teacher_service.dart';
-import '../../core/api_service/syllabus_service.dart';
-import '../../core/api_service/board_service.dart';
+import '../../core/api_service/study_material_service.dart';
+import '../../models/study-material/study_material_update.dart';
 
-class AddSyllabusView extends StatefulWidget {
-  const AddSyllabusView({super.key});
+class UpdateStudyMaterialView extends StatefulWidget {
+  final String studyMaterialId;
+  const UpdateStudyMaterialView({super.key, required this.studyMaterialId});
 
   @override
-  State<AddSyllabusView> createState() => _AddSyllabusViewState();
+  State<UpdateStudyMaterialView> createState() => _UpdateStudyMaterialViewState();
 }
 
-class _AddSyllabusViewState extends State<AddSyllabusView> {
+class _UpdateStudyMaterialViewState extends State<UpdateStudyMaterialView> {
   var logger = Logger();
 
   final browserDefaultFormKey = GlobalKey<FormState>();
@@ -55,12 +55,15 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
   String _classId = "";
   String _subjectId = "";
   String _teacherId = "";
-  String _boardId = "";
+  String studyMaterialType = "";
+
+  String previousFileUrl = "";
 
    // Declare TextEditingControllers
   final TextEditingController titleController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
 
-  final _syllabusService = SyllabusService();
+  final _studyMaterialService = StudyMaterialService();
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -82,40 +85,88 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
     print("selectedFile: ${selectedFile!.bytes}");
   }
 
-  // Create Study Material method
-  Future<void> _createSyllabus(String title) async {
-    print("title: $title");
+  Future<void> _fetchStudyMaterial() async {
+    final studyMaterial = await _studyMaterialService.fetchStudyMaterialById(widget.studyMaterialId, token);
+    setState(() {
+      logger.d('studyMaterial: ${studyMaterial.toJson()}');
+      titleController.text = studyMaterial.title ?? '';
+      descriptionController.text = studyMaterial.description ?? '';
+      studyMaterialType = studyMaterial.type ?? '';
+      _classId = studyMaterial.classInfo?.id ?? '';
+      logger.d('classId: $_classId');
+      _subjectId = studyMaterial.subject?.id ?? '';
+      logger.d('subjectId: $_subjectId');
+      _teacherId = studyMaterial.teacher?.id ?? '';
+      logger.d('teacherId: $_teacherId');
+      previousFileUrl = studyMaterial.fileUrl ?? '';
+    });
+  }
+
+  // Update Study Material method
+  Future<void> _updateStudyMaterial(String title, String description) async {
     // Validate all required fields before proceeding
     if (title.isEmpty || 
+        description.isEmpty || 
+        studyMaterialType.isEmpty ||
         _classId.isEmpty ||
         _subjectId.isEmpty ||
-        _boardId.isEmpty ||
-        _teacherId.isEmpty ||
-        selectedFile == null) {
+        _teacherId.isEmpty) {
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all fields and select a file'),
+          content: Text('Please fill in all fields'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
+
     setState(() => _isLoading = true);
     try {
-      await _syllabusService.createSyllabus2(
-        title, 
-        selectedFile!.bytes!, 
-        selectedFile!.name, 
-        _classId, 
-        _subjectId, 
-        _teacherId,
-        _boardId, 
-        token);
-        context.go('/dashboard/syllabus/all-syllabus');
-        ScaffoldMessenger.of(context).showSnackBar(
+      // If a new file is selected, upload it first
+      String fileUrl = previousFileUrl; // Default to existing file URL
+      if (selectedFile != null) {
+        // Upload new file and get URL
+      await _studyMaterialService.updateStudyMaterial2(
+          widget.studyMaterialId,
+          title,
+          description,
+          studyMaterialType,
+          selectedFile!.bytes!,
+          selectedFile!.name,
+          _classId,
+          _subjectId,
+          _teacherId,
+          token
+        );
+      } else {
+        logger.e('No file selected');
+        // Create updated study material object
+      final updatedStudyMaterial = StudyMaterialUpdate(
+        title: title,
+        description: description,
+        fileUrl: fileUrl,
+        type: studyMaterialType,
+        subjectId: _subjectId,
+        classId: _classId,
+        teacherId: _teacherId,
+      );
+      logger.d('updatedStudyMaterial: ${updatedStudyMaterial.toJson()}');
+
+      // Call update API
+      await _studyMaterialService.updateStudyMaterial(
+        widget.studyMaterialId,
+        updatedStudyMaterial,
+        token
+      );
+      }
+
+      
+
+      context.go('/dashboard/study-materials/all-study-materials');
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Syllabus created successfully',
+          content: Text('Study Material updated successfully',
               style: TextStyle(color: Colors.green)),
         ),
       );
@@ -144,24 +195,22 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
     }
     _fetchClassList();
     _fetchSubjectList();
-    _fetchBoardList();
     // Only fetch teacher list if user is not a teacher
     if (authProvider.getRole != 'teacher') {
       _fetchTeacherList();
     }
+    _fetchStudyMaterial();
   }
 
 // class service
   final _classService = ClassService();
   final _subjectService = SubjectService();
   final _teacherService = TeacherService();
-  final _boardService = BoardService();
 
 // class list
   List<ClassInfo> _classList = [];
   List<Subject> _subjectList = [];
   List<Teacher> _teacherList = [];
-  List<Board> _boardList = [];
 
   // fetch class list
   Future<void> _fetchClassList() async {
@@ -184,14 +233,6 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
     final teacherList = await _teacherService.fetchAllTeachers(token);
     setState(() {
       _teacherList = teacherList;
-    });
-  }
-
-  // fetch board list
-  Future<void> _fetchBoardList() async {
-    final boardList = await _boardService.fetchAllBoards(token);
-    setState(() {
-      _boardList = boardList;
     });
   }
 
@@ -227,7 +268,7 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
           Form(
             key: browserDefaultFormKey,
             child: ShadowContainer(
-              headerText: 'Add Syllabus',
+              headerText: 'Add Study Material',
               child: ResponsiveGridRow(
                 children: [
                   // Lecture Title
@@ -237,15 +278,15 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                     child: Padding(
                       padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Syllabus Title',
+                        labelText: 'Study Material Title',
                         inputField: TextFormField(
                           controller: titleController,
                           decoration: const InputDecoration(
-                            hintText: 'Enter syllabus title',
+                            hintText: 'Enter study material title',
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter syllabus title';
+                              return 'Please enter study material title';
                             }
                             return null;
                           },
@@ -255,7 +296,32 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                     ),
                   ),
 
-                  // Board
+                  // Lecture Description
+                  ResponsiveGridCol(
+                    lg: _lg,
+                    md: _md,
+                    child: Padding(
+                      padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
+                      child: TextFieldLabelWrapper(
+                        labelText: 'Study Material Description',
+                        inputField: TextFormField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            hintText: 'Enter study material description',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter study material description';
+                            }
+                            return null;
+                          },
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Study Material Type
                   ResponsiveGridCol(
                     lg: 4,
                     md: 6,
@@ -263,23 +329,24 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                       padding:
                           EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Board',
+                        labelText: 'Study Material Type',
                         inputField: DropdownButtonFormField2(
                           menuItemStyleData: _dropdownStyle.menuItemStyle,
                           buttonStyleData: _dropdownStyle.buttonStyle,
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
-                          hint: const Text('Select Board'),
-                          items: _boardList
-                              .map((board) => DropdownMenuItem(
-                                    value: board.id,
-                                    child: Text(board.name),
-                                  ))
-                              .toList(),
+                          hint: const Text('Select Study Material Type'),
+                          value: studyMaterialType.isNotEmpty ? studyMaterialType : null,
+                          items: [
+                            {'key': 'Pdf', 'value': 'pdf'},
+                          ].map((studyMaterialType) => DropdownMenuItem(
+                            value: studyMaterialType['value'],
+                            child: Text(studyMaterialType['key']!),
+                          )).toList(),
                           onChanged: (value) {
                             setState(() {
-                              _boardId = value as String;
-                              logger.d('board: $_boardId');
+                              studyMaterialType = value as String;
+                              logger.d('studyMaterialType: $studyMaterialType');
                             });
                           },
                         ),
@@ -302,12 +369,11 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
                           hint: const Text('Select Class'),
-                          items: _classList
-                              .map((classInfo) => DropdownMenuItem(
-                                    value: classInfo.id,
-                                    child: Text(classInfo.name),
-                                  ))
-                              .toList(),
+                          value: _classId.isNotEmpty ? _classId : null,
+                          items: _classList.map((classInfo) => DropdownMenuItem(
+                            value: classInfo.id,
+                            child: Text(classInfo.name),
+                          )).toList(),
                           onChanged: (value) {
                             setState(() {
                               _classId = value as String;
@@ -333,12 +399,11 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
                           hint: const Text('Select Subject'),
-                          items: _subjectList
-                              .map((subject) => DropdownMenuItem(
-                                    value: subject.id,
-                                    child: Text(subject.name),
-                                  ))
-                              .toList(),
+                          value: _subjectId.isNotEmpty ? _subjectId : null,
+                          items: _subjectList.map((subject) => DropdownMenuItem(
+                            value: subject.id,
+                            child: Text(subject.name),
+                          )).toList(),
                           onChanged: (value) {
                             setState(() {
                               _subjectId = value as String;
@@ -364,16 +429,14 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
                           hint: const Text('Select Teacher'),
-                          items: _teacherList
-                              .map((teacher) => DropdownMenuItem(
-                                    value: teacher.id,
-                                    child: Text(teacher.fullName),
-                                  ))
-                              .toList(),
+                          value: _teacherId.isNotEmpty ? _teacherId : null,
+                          items: _teacherList.map((teacher) => DropdownMenuItem(
+                            value: teacher.id,
+                            child: Text(teacher.fullName),
+                          )).toList(),
                           onChanged: (value) {
                             setState(() {
                               _teacherId = value as String;
-                              logger.d('teacher: $_teacherId');
                             });
                           },
                         ),
@@ -381,14 +444,14 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                     ),
                   ),
 
-                  // Syllabus File
+                  // Study Material File
                   ResponsiveGridCol(
                     lg: 4,
                     md: 6,
                     child: Padding(
                       padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Syllabus File',
+                        labelText: 'Study Material File',
                         inputField: Column(
                           children: [
                             ElevatedButton.icon(
@@ -397,7 +460,7 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                               },
                               icon:
                                   const Icon(Icons.upload_file), // Upload icon
-                              label: const Text('Upload Syllabus File'),
+                              label: const Text('Upload Study Material File'),
                             ),
                             // Display the selected image here
                             if (selectedFile !=
@@ -407,6 +470,12 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                                   const SizedBox(height: 8),
                                   Text(
                                     'Selected File: ${selectedFile!.name}', // Display the name of the selected image
+                                    style: const TextStyle(
+                                        fontSize: 16, color: Colors.blue), // Set the desired text style
+                                  ),
+                                  // Previous Uploaded file
+                                  Text(
+                                    'Previous Uploaded File: $previousFileUrl', // Display the name of the selected image
                                     style: const TextStyle(
                                         fontSize: 16, color: Colors.blue), // Set the desired text style
                                   ),
@@ -429,40 +498,16 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
                         style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue),
                         onPressed: () {
-                          if (browserDefaultFormKey.currentState?.validate() ==
-                              true) {
+                          if (browserDefaultFormKey.currentState?.validate() == true) {
                             browserDefaultFormKey.currentState?.save();
-                            final title = titleController.text; // Get the class name
-                            // Debugging: Log the values
-  
-
-// if (title.isNotEmpty && description.isNotEmpty && 
-//              studyMaterialType.isNotEmpty && _subjectId.isNotEmpty && 
-//              _classId.isNotEmpty && _createdBy.isNotEmpty) {
-           // Call the method to create a study material
-          //  _createStudyMaterial(
-          //    title, 
-          //    description, 
-          //    "https://www.google.com", 
-          //    studyMaterialType,
-          //    _subjectId, 
-          //    _classId, 
-          //    _createdBy, 
-          //  );
-
-          _createSyllabus(title);
-        //  } else {
-        //    // Handle the case where one or more fields are empty
-        //    ScaffoldMessenger.of(context).showSnackBar(
-        //      const SnackBar(content: Text('Please fill in all fields')),
-        //    );
-        //  }
-                            
+                            final title = titleController.text;
+                            final description = descriptionController.text;
+                            _updateStudyMaterial(title, description);
                           }
                         },
                         child: _isLoading
                             ? const CircularProgressIndicator()
-                            : const Text('Create Lecture'),
+                            : const Text('Update Study Material'),
                       ),
                     ),
                   ),
@@ -480,6 +525,7 @@ class _AddSyllabusViewState extends State<AddSyllabusView> {
   void dispose() {
     // Dispose of the controllers when the widget is removed from the widget tree
     titleController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 }

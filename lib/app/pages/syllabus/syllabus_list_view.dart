@@ -9,36 +9,35 @@ import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:go_router/go_router.dart';
 
 // 🌎 Project imports:
-import '../../../../generated/l10n.dart' as l;
 import '../../core/theme/_app_colors.dart';
 import '../../widgets/widgets.dart';
-import '../../core/api_service/subject_service.dart';
-import '../../models/subject/subject.dart';
+import '../../core/api_service/syllabus_service.dart';
+import '../../models/syllabus/syllabus.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 
+final logger = Logger();
+
 class SyllabusListView extends StatefulWidget {
-  const SyllabusListView({super.key});
+  final String? syllabusId;
+  const SyllabusListView({super.key, this.syllabusId});
 
   @override
   State<SyllabusListView> createState() => _SyllabusListViewState();
 }
 
 class _SyllabusListViewState extends State<SyllabusListView> {
-  List<Subject> _subjects = [];
-  int _totalSubjects = 0;
+  List<Syllabus> _syllabuses = [];
+  int _totalSyllabuses = 0;
 
   bool _isLoading = true;
-  final SubjectService _subjectService = SubjectService();
+  final SyllabusService _syllabusService = SyllabusService();
 
   final ScrollController _scrollController = ScrollController();
 
   String _searchQuery = '';
-
   String token = '';
-
-  var logger = Logger();
 
   @override
   void initState() {
@@ -46,7 +45,7 @@ class _SyllabusListViewState extends State<SyllabusListView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
-    _fetchSubjects();
+    _fetchSyllabuses();
   }
 
   @override
@@ -60,8 +59,8 @@ class _SyllabusListViewState extends State<SyllabusListView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Subject'),
-          content: const Text('Do you want to delete this subject?'),
+          title: const Text('Delete Syllabus'),
+          content: const Text('Do you want to delete this syllabus?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -81,50 +80,52 @@ class _SyllabusListViewState extends State<SyllabusListView> {
     );
   }
 
-  Future<void> _deleteSubject(String subjectId, String token) async {
+  Future<void> _deleteSyllabus(String syllabusId) async {
     // Show confirmation dialog before deleting
     bool? confirmDelete = await _showDeleteConfirmationDialog();
     if (confirmDelete == true) {
       try {
-
-        await _subjectService.deleteSubject(subjectId, token);
+        await _syllabusService.deleteSyllabus(syllabusId, token);
         // Optionally, refresh the class list after deletion
-        await _fetchSubjects();
+        await _fetchSyllabuses();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Syllabus deleted successfully')),
+        );
       } catch (e) {
         // Handle error appropriately
-        print('Error deleting subject: $e');
+        logger.e('Error deleting syllabus: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete class: $e')),
+          SnackBar(content: Text('Failed to delete syllabus: $e')),
         );
       }
     }
   }
 
   // New method to fetch Class data from the API
-  Future<void> _fetchSubjects() async {
+  Future<void> _fetchSyllabuses() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      List<Subject> response = await _subjectService.fetchAllSubjects(token); // Fetch the response
-      logger.d('response: ${response}');
+      List<Syllabus> response = await _syllabusService.fetchAllSyllabuses(token); // Fetch the response
+      logger.i('Syllabuses fetched successfullyname: ${response[0].title}');
       setState(() {
-        _subjects = response;
-        _totalSubjects = response.length;
+            _syllabuses = response;
+        _totalSyllabuses = response.length;
         _isLoading = false;
       });
       
-      print("asubject: ${_subjects.length}");
+          logger.i('Syllabuses fetched successfullylength: ${_syllabuses.length}');
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      print(e);
-      throw Exception('Failed to load Subjects');
+      logger.e('Failed to load syllabuses: $e');
+      throw Exception('Failed to load syllabuses');
     }
   }
 
-  ///_____________________________________________________________________Search_query_________________________
+  // Search Query
   void _setSearchQuery(String query) {
     setState(() {
       _searchQuery = query;
@@ -187,7 +188,7 @@ class _SyllabusListViewState extends State<SyllabusListView> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    //______________________________________________________________________Header__________________
+                    // Header
                     isMobile
                         ? Padding(
                             padding: _sizeInfo.padding,
@@ -221,7 +222,7 @@ class _SyllabusListViewState extends State<SyllabusListView> {
                             ),
                           ),
 
-                    //______________________________________________________________________Data_table__________________
+                    // Data Table
                     isMobile || isTablet
                         ? RawScrollbar(
                             padding: const EdgeInsets.only(left: 18),
@@ -269,7 +270,6 @@ class _SyllabusListViewState extends State<SyllabusListView> {
   }
 
   ElevatedButton addUserButton(TextTheme textTheme) {
-    final lang = l.S.of(context);
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
@@ -277,12 +277,11 @@ class _SyllabusListViewState extends State<SyllabusListView> {
       onPressed: () {
         setState(() {
           //_showFormDialog(context);
-          context.go('/dashboard/classes/add-class');
+          context.go('/dashboard/syllabus/add-syllabus');
         });
       },
       label: Text(
-        lang.addNewUser,
-        //'Add New Student',
+        'Add New Syllabus',
         style: textTheme.bodySmall?.copyWith(
           color: AcnooAppColors.kWhiteColor,
           fontWeight: FontWeight.bold,
@@ -297,15 +296,12 @@ class _SyllabusListViewState extends State<SyllabusListView> {
     );
   }
 
-
-  ///_______________________________________________________________Search_Field___________________________________
+  // Search Field
   TextFormField searchFormField({required TextTheme textTheme}) {
-    final lang = l.S.of(context);
     return TextFormField(
       decoration: InputDecoration(
         isDense: true,
-        // hintText: 'Search...',
-        hintText: '${lang.search}...',
+        hintText: 'Search Syllabus...',
         hintStyle: textTheme.bodySmall,
         suffixIcon: Container(
           margin: const EdgeInsets.all(4.0),
@@ -313,8 +309,7 @@ class _SyllabusListViewState extends State<SyllabusListView> {
             color: AcnooAppColors.kPrimary700,
             borderRadius: BorderRadius.circular(6.0),
           ),
-          child:
-              const Icon(IconlyLight.search, color: AcnooAppColors.kWhiteColor),
+          child: const Icon(IconlyLight.search, color: AcnooAppColors.kWhiteColor),
         ),
       ),
       onChanged: (value) {
@@ -323,7 +318,7 @@ class _SyllabusListViewState extends State<SyllabusListView> {
     );
   }
 
-  ///_______________________________________________________________User_List_Data_Table___________________________
+  // User List Data Table
   Theme userListDataTable(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
@@ -333,82 +328,62 @@ class _SyllabusListViewState extends State<SyllabusListView> {
           dividerTheme: DividerThemeData(
             color: theme.colorScheme.outline,
           )),
-      child: DataTable(
-        checkboxHorizontalMargin: 16,
-        dataRowMaxHeight: 70,
-        headingTextStyle: textTheme.titleMedium,
-        dataTextStyle: textTheme.bodySmall,
-        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-        showBottomBorder: true,
-        columns: const [
-          DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Image')),
-          DataColumn(label: Text('Name')),
-          DataColumn(label: Text('Class')),
-          // DataColumn(label: Text('Description')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: _subjects.asMap().entries.map(
-          (entry) {
-            final index = entry.key + 1;
-            final subject = entry.value;
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(
-                  ClipOval(
-                    child: Image.network(
-                      'https://bbose.online/wp-content/uploads/2024/12/${subject.subjectImage}', 
-                      width: 50, 
-                      height: 50, 
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                DataCell(Text(subject.name)),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: true
-                          ? AcnooAppColors.kSuccess.withOpacity(0.2)
-                          : AcnooAppColors.kError.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    child: Text(
-                      subject.classId ?? 'No Class',
-                      style: textTheme.bodySmall?.copyWith(
-                          color: true
-                              ? AcnooAppColors.kSuccess
-                              : AcnooAppColors.kError),
-                    ),
-                  ),
-                ),
-                // DataCell(Text(subjectInfo.description)),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/subject-profile', extra: subject.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/edit-subject');
-                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-                      IconButton(onPressed: () async {
-                        await _deleteSubject(subject.id, token);
-                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                    ],
-                  ),
-                ),
+      child: _syllabuses.isEmpty
+          ? Center(child: Text('No syllabuses available.'))
+          : DataTable(
+              checkboxHorizontalMargin: 16,
+              dataRowMaxHeight: 70,
+              headingTextStyle: textTheme.titleMedium,
+              dataTextStyle: textTheme.bodySmall,
+              headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
+              showBottomBorder: true,
+              columns: const [
+                DataColumn(label: Text('SN.')),
+                DataColumn(label: Text('Title')),
+                DataColumn(label: Text('Teacher')),
+                DataColumn(label: Text('Subject')),
+                DataColumn(label: Text('Class')),
+                DataColumn(label: Text('Action')),
               ],
-            );
-          },
-        ).toList(),
-      ),
+              rows: _syllabuses.asMap().entries.map(
+                (entry) {
+                  final index = entry.key + 1;
+                  final syllabusInfo = entry.value;
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(index.toString())),
+                      DataCell(Text(syllabusInfo.title)),
+                      DataCell(Text(syllabusInfo.teacher?.fullName ?? '')),
+                      DataCell(Text(syllabusInfo.subject?.name ?? '')),
+                      DataCell(Text(syllabusInfo.classInfo?.name ?? '')),
+                      DataCell(
+                        Row(
+                          children: [
+                            // IconButton(onPressed: () {
+                            //   context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
+                            // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+                            IconButton(onPressed: () {
+                              context.go('/dashboard/syllabus/edit-syllabus/${syllabusInfo.id}');
+                            }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+                            IconButton(onPressed: () async {
+                              await _deleteSyllabus(syllabusInfo.id);
+                            }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
+                            IconButton(onPressed: () {
+                              context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
+                            }, icon: const Icon(Icons.file_present, color: AcnooAppColors.kSuccess,)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ).toList(),
+            ),
     );
   }
 }
 
+// Size Info
 class _SizeInfo {
   final double? alertFontSize;
   final EdgeInsetsGeometry padding;

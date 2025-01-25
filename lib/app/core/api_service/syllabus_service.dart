@@ -2,23 +2,23 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../models/study-material/study-material.dart';
+import '../../models/syllabus/syllabus.dart';
 import '../api_config/api_config.dart';
-import '../../models/study-material/study_material_create.dart';
-import '../../models/study-material/study_material_update.dart';
+import '../../models/syllabus/syllabus_create.dart';
+import '../../models/syllabus/syllabus_update.dart';
 import 'package:logger/logger.dart';
 import 'dart:typed_data';
 import 'package:http_parser/http_parser.dart';
 
 
-class StudyMaterialService {
+class SyllabusService {
   final Logger logger = Logger();
   final String baseUrl = ApiConfig.baseUrl; // Base URL for the API
 
   // Fetch all study materials
-  Future<List<StudyMaterial>> fetchAllStudyMaterials(String token) async {
+  Future<List<Syllabus>> fetchAllSyllabuses(String token) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/study-material/all'),
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/all'),
       headers: {
         'Authorization': 'Bearer $token', // Include token if required
       },
@@ -29,27 +29,27 @@ class StudyMaterialService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       // Extract the study materials from the response
-      final List<StudyMaterial> studyMaterials = (jsonResponse['studyMaterials'] as List)
-          .map((json) => StudyMaterial.fromJson(json))
+      final List<Syllabus> syllabuses = (jsonResponse['syllabuses'] as List)
+          .map((json) => Syllabus.fromJson(json))
           .toList();
-      return studyMaterials;
+      return syllabuses;
     } else {
       throw Exception('Failed to load study materials: ${response.statusCode}');
     }
   }
 
   // Create a new study material
-  Future<void> createStudyMaterial(
-    StudyMaterialCreate studyMaterialCreate,
+  Future<void> createSyllabus(
+    SyllabusCreate syllabusCreate,
     String token
   ) async {
     final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/study-material/create'),
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/create'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(studyMaterialCreate.toJson()),
+      body: jsonEncode(syllabusCreate.toJson()),
     );
 
     if (response.statusCode == 201) {
@@ -61,14 +61,14 @@ class StudyMaterialService {
   }
 
   // Update an existing study material
-  Future<void> updateStudyMaterial(String id, StudyMaterialUpdate studyMaterial, String token) async {
+  Future<void> updateSyllabus(String id, SyllabusUpdate syllabus, String token) async {
     final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/study-material/$id'),
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/$id'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(studyMaterial.toJson()),
+      body: jsonEncode(syllabus.toJson()),
     );
 
     logger.d(response.body);
@@ -81,9 +81,9 @@ class StudyMaterialService {
   }
 
   // Delete a study material
-  Future<void> deleteStudyMaterial(String id, String token) async {
+  Future<void> deleteSyllabus(String id, String token) async {
     final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}/study-material/$id'),
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/$id'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -98,9 +98,9 @@ class StudyMaterialService {
   }
 
   // Fetch a study material by ID
-  Future<StudyMaterial> fetchStudyMaterialById(String id, String token) async {
+  Future<Syllabus> fetchSyllabusById(String id, String token) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/study-material/$id'),
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/$id'),
       headers: {
         'Authorization': 'Bearer $token', // Include token if required
       },
@@ -110,14 +110,14 @@ class StudyMaterialService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      return StudyMaterial.fromJson(jsonResponse['studyMaterial']);
+      return Syllabus.fromJson(jsonResponse['syllabus']);
     } else {
       throw Exception('Failed to load study material: ${response.statusCode}');
     }
   }
 
     // Method to create a new class
-  Future<void> createStudyMaterial2(String title, String description, String type, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String token) async {
+  Future<void> createSyllabus2(String title, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String boardId, String token) async {
     // Determine MIME type based on the file extension
     String mimeType;
     if (fileName.endsWith('.pdf')) {
@@ -129,7 +129,7 @@ class StudyMaterialService {
     // Implement the API call to upload the class info and image
     var request = http.MultipartRequest(
       'POST', 
-      Uri.parse('${ApiConfig.baseUrl}/study-material/create')
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/create')
     );
     
     request.headers['Authorization'] = 'Bearer $token';
@@ -143,11 +143,12 @@ class StudyMaterialService {
     ));
 
     request.fields['title'] = title;
-    request.fields['description'] = description;
-    request.fields['type'] = type;
     request.fields['class'] = classId;
     request.fields['subject'] = subjectId;
     request.fields['teacher'] = teacherId;
+    request.fields['board'] = boardId;
+
+    logger.d('syllabus request: $request');
 
 
     var response = await request.send();
@@ -155,7 +156,7 @@ class StudyMaterialService {
     
     // Check the response status
     if (response.statusCode == 201) {
-      logger.i('Study Material created successfully');
+      logger.i('Syllabus created successfully');
       return;
     } else {
       logger.e('Failed: ${responseBody.body}');
@@ -164,7 +165,7 @@ class StudyMaterialService {
   }
 
     // Method to create a new class
-  Future<void> updateStudyMaterial2(String id, String title, String description, String type, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String token) async {
+  Future<void> updateSyllabus2(String id, String title, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String boardId, String token) async {
     // Determine MIME type based on the file extension
     String mimeType;
     if (fileName.endsWith('.pdf')) {
@@ -176,7 +177,7 @@ class StudyMaterialService {
     // Implement the API call to upload the class info and image
     var request = http.MultipartRequest(
       'PUT', 
-      Uri.parse('${ApiConfig.baseUrl}/study-material2/$id')
+      Uri.parse('${ApiConfig.baseUrl}/syllabus2/$id')
     );
     
     request.headers['Authorization'] = 'Bearer $token';
@@ -190,11 +191,10 @@ class StudyMaterialService {
     ));
 
     request.fields['title'] = title;
-    request.fields['description'] = description;
-    request.fields['type'] = type;
     request.fields['class'] = classId;
     request.fields['subject'] = subjectId;
     request.fields['teacher'] = teacherId;
+    request.fields['board'] = boardId;
 
 
     var response = await request.send();

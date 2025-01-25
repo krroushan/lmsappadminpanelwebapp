@@ -17,10 +17,8 @@ import 'app/providers/providers.dart';
 import 'app/routes/app_routes.dart';
 import 'generated/l10n.dart';
 
-
-
 Future<void> main() async {
-  setPathUrlStrategy();
+  //setPathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   ResponsiveGridBreakpoints.value = ResponsiveGridBreakpoints(
     sm: 576,

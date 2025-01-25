@@ -7,8 +7,8 @@ class LectureCreate {
   final String classId;
   final String subjectId;
   final String teacherId;
+  final String startDate;
   final String startTime;
-  final String endTime;
 
   LectureCreate({
     required this.title,
@@ -19,8 +19,8 @@ class LectureCreate {
     required this.classId,
     required this.subjectId,
     required this.teacherId,
+    required this.startDate,
     required this.startTime,
-    required this.endTime,
   });
 
   factory LectureCreate.fromJson(Map<String, dynamic> json) {
@@ -33,8 +33,8 @@ class LectureCreate {
       classId: json['class'],
       subjectId: json['subject'],
       teacherId: json['teacher'],
+      startDate: json['startDate'],
       startTime: json['startTime'],
-      endTime: json['endTime'],
     );
   }
 
@@ -48,8 +48,8 @@ class LectureCreate {
       'class': classId,
       'subject': subjectId,
       'teacher': teacherId,
+      'startDate': startDate,
       'startTime': startTime,
-      'endTime': endTime,
     };
   }
 }

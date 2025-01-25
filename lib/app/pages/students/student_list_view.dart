@@ -210,7 +210,7 @@ class _StudentListViewState extends State<StudentListView> {
                                     const Spacer(),
                                     addStudentButton(textTheme),
                                     const Spacer(),
-                                    fakeStudentButton(textTheme),
+                                    // fakeStudentButton(textTheme),
                                   ],
                                 ),
                                 const SizedBox(height: 16.0),
@@ -229,8 +229,7 @@ class _StudentListViewState extends State<StudentListView> {
                                 ),
                                 Spacer(flex: isTablet || isMobile ? 1 : 2),
                                 addStudentButton(textTheme),
-                                const Spacer(flex: 1),
-                                fakeStudentButton(textTheme),
+                                //const Spacer(flex: 1),
                               ],
                             ),
                           ),
@@ -325,75 +324,75 @@ class _StudentListViewState extends State<StudentListView> {
 
 // generate fake data
 // new student add button
-  ElevatedButton fakeStudentButton(TextTheme textTheme) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-      ),
-      onPressed: () {
-        setState(() {
-          _createFakeStudent();
-        });
-      },
-      label: Text(
-        'Generate Fake Students',
-        style: textTheme.bodySmall?.copyWith(
-          color: AcnooAppColors.kWhiteColor,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      iconAlignment: IconAlignment.start,
-      icon: const Icon(
-        Icons.add_circle_outline_outlined,
-        color: AcnooAppColors.kWhiteColor,
-        size: 20.0,
-      ),
-    );
-  }
+  // ElevatedButton fakeStudentButton(TextTheme textTheme) {
+  //   return ElevatedButton.icon(
+  //     style: ElevatedButton.styleFrom(
+  //       padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+  //     ),
+  //     onPressed: () {
+  //       setState(() {
+  //         _createFakeStudent();
+  //       });
+  //     },
+  //     label: Text(
+  //       'Generate Fake Students',
+  //       style: textTheme.bodySmall?.copyWith(
+  //         color: AcnooAppColors.kWhiteColor,
+  //         fontWeight: FontWeight.bold,
+  //       ),
+  //     ),
+  //     iconAlignment: IconAlignment.start,
+  //     icon: const Icon(
+  //       Icons.add_circle_outline_outlined,
+  //       color: AcnooAppColors.kWhiteColor,
+  //       size: 20.0,
+  //     ),
+  //   );
+  // }
 
   // new method to create a fake student and send to API
-  Future<void> _createFakeStudent() async {
-    // Generate a fake student with valid data
-    final fakeStudent = StudentCreate.fromJson({
-      "fullName": faker.person.name(), 
-      "fatherName": faker.person.name(),
-      "fatherOccupation": faker.person.name(),
-      "motherName": faker.person.name(),
-      "email": "ramngo${faker.randomGenerator.integer(1000, min: 1)}@gmail.com", 
-      "rollNo": "RAMNGO${faker.randomGenerator.integer(1000, min: 1)}", 
-      "phoneNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
-      "alternatePhoneNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
-      "adharNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
-      "dateOfBirth": faker.date.dateTime().toString(),
-      "gender": ["Male", "Female", "Other"][faker.randomGenerator.integer(3)],
-      "category": ["General", "OBC", "SC", "ST"][faker.randomGenerator.integer(4)],
-      "disability": ["Orthopedically Handicapped", "Mentally Handicapped", "Visually Handicapped", "Hearing Handicapped", "Speech Handicapped", "Multiple Handicapped", "Autistic", "Down Syndrome", "Other"][faker.randomGenerator.integer(9)],
-      "typeOfInstitution": ["Government", "Private"][faker.randomGenerator.integer(2)],
-      "board": [
-        "6772e19171ffa2cea91265c0",
-        "6772e1a171ffa2cea91265c6"
-      ][faker.randomGenerator.integer(2)],
-      "class": [
-        "6772e0cd71ffa2cea91265af", 
-        "6772e0ea71ffa2cea91265b5",
-      ][faker.randomGenerator.integer(2)],
-      "password": "123456789", 
-    });
+  // Future<void> _createFakeStudent() async {
+  //   // Generate a fake student with valid data
+  //   final fakeStudent = StudentCreate.fromJson({
+  //     "fullName": faker.person.name(), 
+  //     "fatherName": faker.person.name(),
+  //     "fatherOccupation": faker.person.name(),
+  //     "motherName": faker.person.name(),
+  //     "email": "ramngo${faker.randomGenerator.integer(1000, min: 1)}@gmail.com", 
+  //     "rollNo": "RAMNGO${faker.randomGenerator.integer(1000, min: 1)}", 
+  //     "phoneNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
+  //     "alternatePhoneNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
+  //     "adharNumber": "${faker.randomGenerator.integer(100000000000, min: 100000000000)}",
+  //     "dateOfBirth": faker.date.dateTime().toString(),
+  //     "gender": ["Male", "Female", "Other"][faker.randomGenerator.integer(3)],
+  //     "category": ["General", "OBC", "SC", "ST"][faker.randomGenerator.integer(4)],
+  //     "disability": ["Orthopedically Handicapped", "Mentally Handicapped", "Visually Handicapped", "Hearing Handicapped", "Speech Handicapped", "Multiple Handicapped", "Autistic", "Down Syndrome", "Other"][faker.randomGenerator.integer(9)],
+  //     "typeOfInstitution": ["Government", "Private"][faker.randomGenerator.integer(2)],
+  //     "board": [
+  //       "6772e19171ffa2cea91265c0",
+  //       "6772e1a171ffa2cea91265c6"
+  //     ][faker.randomGenerator.integer(2)],
+  //     "class": [
+  //       "6772e0cd71ffa2cea91265af", 
+  //       "6772e0ea71ffa2cea91265b5",
+  //     ][faker.randomGenerator.integer(2)],
+  //     "password": "123456789", 
+  //   });
 
-    print("fakeStudent: ${fakeStudent.toJson()}");
+  //   print("fakeStudent: ${fakeStudent.toJson()}");
 
-    try {
-      // Send the fake student to the API
-      await _studentService.createStudent(fakeStudent, token);
-      // Optionally, refresh the student list after creation
-      await _fetchStudents(_currentPage + 1);
-    } catch (e) {
-      print('Error creating fake student: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create fake student: $e')),
-      );
-    }
-  }
+  //   try {
+  //     // Send the fake student to the API
+  //     await _studentService.createStudent(fakeStudent, token);
+  //     // Optionally, refresh the student list after creation
+  //     await _fetchStudents(_currentPage + 1);
+  //   } catch (e) {
+  //     print('Error creating fake student: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Failed to create fake student: $e')),
+  //     );
+  //   }
+  // }
 
   // total pages
   //int get _totalPages => (_totalPages).ceil();

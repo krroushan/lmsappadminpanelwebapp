@@ -94,6 +94,7 @@ class _LectureCardListViewState extends State<LectureCardListView> {
     });
     try {
       List<Lecture> response = await _lectureService.fetchAllLectures(token); // Fetch the response
+      
       logger.i('Lectures fetched successfullyname: ${response[0].title}');
       setState(() {
           _lectures = response;
@@ -216,7 +217,7 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                             image: NetworkImage('https://apkobi.com/uploads/lectures/thumbnails/${entry.value.thumbnail}'),
                             isLoading: false,
                             lectureId: entry.value.id,
-                            createdBy: entry.value.teacher.fullName,
+                            createdBy: entry.value.teacher?.fullName ?? '',
                             createdDate: entry.value.createdAt,
                             board: 'CBSE',
                             className: 'Class 10',

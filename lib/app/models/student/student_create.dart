@@ -10,11 +10,13 @@ class StudentCreate {
   final String phoneNumber;
   final String alternatePhoneNumber;
   final String adharNumber;
+  final String schoolIdRollNumber;
   final String dateOfBirth;
   final String gender;
   final String category;
   final String disability;
   final String typeOfInstitution;
+  final String schoolInstitutionName;
   final String boardId;
   final String classId;
   final String password;
@@ -29,11 +31,13 @@ class StudentCreate {
     required this.phoneNumber,
     required this.alternatePhoneNumber,
     required this.adharNumber,
+    required this.schoolIdRollNumber,
     required this.dateOfBirth,
     required this.gender,
     required this.category,
     required this.disability,
     required this.typeOfInstitution,
+    required this.schoolInstitutionName,
     required this.boardId,
     required this.classId,
     required this.password,
@@ -52,11 +56,13 @@ class StudentCreate {
       phoneNumber: json['phoneNumber'],
       alternatePhoneNumber: json['alternatePhoneNumber'],
       adharNumber: json['adharNumber'],
+      schoolIdRollNumber: json['schoolIdRollNumber'],
       dateOfBirth: json['dateOfBirth'],
       gender: json['gender'],
       category: json['category'],
       disability: json['disability'],
       typeOfInstitution: json['typeOfInstitution'],
+      schoolInstitutionName: json['schoolInstitutionName'],
       boardId: json['board'],
       classId: json['class'],
       password: json['password'],
@@ -75,11 +81,13 @@ class StudentCreate {
       "phoneNumber": phoneNumber,
       "alternatePhoneNumber": alternatePhoneNumber,
       "adharNumber": adharNumber,
+      "schoolIdRollNumber": schoolIdRollNumber,
       "dateOfBirth": dateOfBirth,
       "gender": gender,
       "category": category,
       "disability": disability,
       "typeOfInstitution": typeOfInstitution,
+      "schoolInstitutionName": schoolInstitutionName,
       "board": boardId,
       "class": classId,
       "password": password,

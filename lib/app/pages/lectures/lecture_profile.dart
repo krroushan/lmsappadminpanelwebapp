@@ -134,27 +134,27 @@ class _LectureProfileDetailsWidgetState extends State<LectureProfileDetailsWidge
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
-                _buildProfileDetailRow('Class', widget.lecture.classInfo.name),
+                _buildProfileDetailRow('Class', widget.lecture.classInfo?.name ?? ''),
                 Divider(
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
-                _buildProfileDetailRow('Subject', widget.lecture.subject.name),
+                _buildProfileDetailRow('Subject', widget.lecture.subject?.name ?? ''),
                 Divider(
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
-                _buildProfileDetailRow('Teacher', widget.lecture.teacher.fullName),
+                _buildProfileDetailRow('Teacher', widget.lecture.teacher?.fullName ?? ''),
+                Divider(
+                  color: widget.theme.colorScheme.outline,
+                  height: 0.0,
+                ),
+                _buildProfileDetailRow('Start Date', widget.lecture.startDate.toString()),
                 Divider(
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
                 _buildProfileDetailRow('Start Time', widget.lecture.startTime.toString()),
-                Divider(
-                  color: widget.theme.colorScheme.outline,
-                  height: 0.0,
-                ),
-                _buildProfileDetailRow('End Time', widget.lecture.endTime.toString()),
                 Divider(
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,

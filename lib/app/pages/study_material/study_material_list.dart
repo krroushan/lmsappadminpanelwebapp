@@ -87,12 +87,15 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
       try {
         await _studyMaterialService.deleteStudyMaterial(studyMaterialId, token);
         // Optionally, refresh the class list after deletion
-        //await _fetchLectures();
+        await _fetchStudyMaterials();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Study Material deleted successfully')),
+        );
       } catch (e) {
         // Handle error appropriately
-        print('Error deleting class: $e');
+        logger.e('Error deleting study material: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete class: $e')),
+          SnackBar(content: Text('Failed to delete study material: $e')),
         );
       }
     }
@@ -105,7 +108,7 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
     });
     try {
       List<StudyMaterial> response = await _studyMaterialService.fetchAllStudyMaterials(token); // Fetch the response
-      logger.i('Lectures fetched successfullyname: ${response[0].title}');
+      logger.i('Study Materials fetched successfullyname: ${response[0].title}');
       setState(() {
             _studyMaterials = response;
         _totalStudyMaterials = response.length;
@@ -274,11 +277,11 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
       onPressed: () {
         setState(() {
           //_showFormDialog(context);
-          context.go('/dashboard/lectures/add-lecture');
+          context.go('/dashboard/study-materials/add-study-material');
         });
       },
       label: Text(
-        'Add New Lecture',
+        'Add New Study Material',
         style: textTheme.bodySmall?.copyWith(
           color: AcnooAppColors.kWhiteColor,
           fontWeight: FontWeight.bold,
@@ -295,12 +298,10 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
 
   // Search Field
   TextFormField searchFormField({required TextTheme textTheme}) {
-    final lang = l.S.of(context);
     return TextFormField(
       decoration: InputDecoration(
         isDense: true,
-        // hintText: 'Search...',
-        hintText: '${lang.search}...',
+        hintText: 'Search Study Material...',
         hintStyle: textTheme.bodySmall,
         suffixIcon: Container(
           margin: const EdgeInsets.all(4.0),
@@ -308,8 +309,7 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
             color: AcnooAppColors.kPrimary700,
             borderRadius: BorderRadius.circular(6.0),
           ),
-          child:
-              const Icon(IconlyLight.search, color: AcnooAppColors.kWhiteColor),
+          child: const Icon(IconlyLight.search, color: AcnooAppColors.kWhiteColor),
         ),
       ),
       onChanged: (value) {
@@ -328,55 +328,57 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
           dividerTheme: DividerThemeData(
             color: theme.colorScheme.outline,
           )),
-      child: DataTable(
-        checkboxHorizontalMargin: 16,
-        dataRowMaxHeight: 70,
-        headingTextStyle: textTheme.titleMedium,
-        dataTextStyle: textTheme.bodySmall,
-        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-        showBottomBorder: true,
-        columns: const [
-          DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Title')),
-          DataColumn(label: Text('Teacher')),
-          DataColumn(label: Text('Subject')),
-          DataColumn(label: Text('Class')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: _studyMaterials.asMap().entries.map(
-          (entry) {
-            final index = entry.key + 1;
-            final studyMaterialInfo = entry.value;
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(studyMaterialInfo.title)),
-                DataCell(Text(studyMaterialInfo.teacher.fullName)),
-                DataCell(Text(studyMaterialInfo.subject.name)),
-                DataCell(Text(studyMaterialInfo.classInfo.name)),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/study-materials/study-material-profile', extra: studyMaterialInfo.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/study-materials/edit-study-material', extra: studyMaterialInfo.id);
-                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-                      IconButton(onPressed: () async {
-                        await _deleteStudyMaterial(studyMaterialInfo.id);
-                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/study-materials/view-pdf/${studyMaterialInfo.id}');
-                      }, icon: const Icon(Icons.file_present, color: AcnooAppColors.kSuccess,)),
-                    ],
-                  ),
-                ),
+      child: _studyMaterials.isEmpty
+          ? Center(child: Text('No study materials available.'))
+          : DataTable(
+              checkboxHorizontalMargin: 16,
+              dataRowMaxHeight: 70,
+              headingTextStyle: textTheme.titleMedium,
+              dataTextStyle: textTheme.bodySmall,
+              headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
+              showBottomBorder: true,
+              columns: const [
+                DataColumn(label: Text('SN.')),
+                DataColumn(label: Text('Title')),
+                DataColumn(label: Text('Teacher')),
+                DataColumn(label: Text('Subject')),
+                DataColumn(label: Text('Class')),
+                DataColumn(label: Text('Action')),
               ],
-            );
-          },
-        ).toList(),
-      ),
+              rows: _studyMaterials.asMap().entries.map(
+                (entry) {
+                  final index = entry.key + 1;
+                  final studyMaterialInfo = entry.value;
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(index.toString())),
+                      DataCell(Text(studyMaterialInfo.title)),
+                      DataCell(Text(studyMaterialInfo.teacher?.fullName ?? '')),
+                      DataCell(Text(studyMaterialInfo.subject?.name ?? '')),
+                      DataCell(Text(studyMaterialInfo.classInfo?.name ?? '')),
+                      DataCell(
+                        Row(
+                          children: [
+                            IconButton(onPressed: () {
+                              context.go('/dashboard/study-materials/study-material-profile', extra: studyMaterialInfo.id);
+                            }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+                            IconButton(onPressed: () {
+                              context.go('/dashboard/study-materials/update-study-material/${studyMaterialInfo.id}');
+                            }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+                            IconButton(onPressed: () async {
+                              await _deleteStudyMaterial(studyMaterialInfo.id);
+                            }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
+                            IconButton(onPressed: () {
+                              context.go('/dashboard/study-materials/view-pdf/${studyMaterialInfo.id}');
+                            }, icon: const Icon(Icons.file_present, color: AcnooAppColors.kSuccess,)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ).toList(),
+            ),
     );
   }
 }

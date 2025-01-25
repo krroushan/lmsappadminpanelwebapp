@@ -277,8 +277,7 @@ class _ClassesListViewState extends State<ClassesListView> {
         });
       },
       label: Text(
-        lang.addNewUser,
-        //'Add New Student',
+        'Add New Class',
         style: textTheme.bodySmall?.copyWith(
           color: AcnooAppColors.kWhiteColor,
           fontWeight: FontWeight.bold,

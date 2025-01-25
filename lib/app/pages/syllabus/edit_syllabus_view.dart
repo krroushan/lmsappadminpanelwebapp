@@ -22,7 +22,8 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:logger/logger.dart';
 
 class EditSyllabusView extends StatefulWidget {
-  const EditSyllabusView({super.key});
+  final String syllabusId;
+  const EditSyllabusView({super.key, required this.syllabusId});
 
   @override
   State<EditSyllabusView> createState() => _EditSyllabusViewState();

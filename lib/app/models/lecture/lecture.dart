@@ -6,11 +6,11 @@ class Lecture {
   final String id;
   final String title;
   final String description;
-  final DateTime startTime;
-  final DateTime endTime;
-  final Teacher teacher;
-  final ClassInfo classInfo; 
-  final Subject subject; 
+  final String startDate;
+  final String startTime;
+  final Teacher? teacher;
+  final ClassInfo? classInfo; 
+  final Subject? subject; 
   final String? recordingUrl;
   final String lectureType;
   final String thumbnail;
@@ -22,8 +22,8 @@ class Lecture {
     required this.id,
     required this.title,
     required this.description,
+    required this.startDate,
     required this.startTime,
-    required this.endTime,
     required this.teacher,
     required this.classInfo,
     required this.subject,
@@ -40,8 +40,8 @@ class Lecture {
     id: json['_id'],
     title: json['title'],
     description: json['description'],
-    startTime: DateTime.parse(json['startTime']),
-    endTime: DateTime.parse(json['endTime']),
+    startDate: json['startDate'],
+    startTime: json['startTime'],
     teacher: Teacher.fromJson(json['teacher']), // Parses the nested teacher object
     classInfo: ClassInfo.fromJson(json['class']), // Parses the nested class object
     subject: Subject.fromJson(json['subject']), // Parses the nested subject object
@@ -59,11 +59,11 @@ class Lecture {
       '_id': id,
       'title': title,
       'description': description,
+      'startDate': startDate,
       'startTime': startTime,
-      'endTime': endTime,
-      'teacher': teacher.toJson(),
-      'class': classInfo.toJson(),
-      'subject': subject.toJson(),
+      'teacher': teacher?.toJson(),
+      'class': classInfo?.toJson(),
+      'subject': subject?.toJson(),
       'recordingUrl': recordingUrl ?? "",
       'lectureType': lectureType,
       'thumbnail': thumbnail,

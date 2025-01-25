@@ -340,12 +340,12 @@ class _AddStudyMaterialViewState extends State<AddStudyMaterialView> {
                           items: [
                             // key and value
                             {'key': 'Pdf', 'value': 'pdf'},
-                            {'key': 'Video', 'value': 'video'},
-                            {'key': 'Audio', 'value': 'audio'},
-                            {'key': 'Image', 'value': 'image'},
-                            {'key': 'Document', 'value': 'document'},
-                            {'key': 'Link', 'value': 'link'},
-                            {'key': 'Other', 'value': 'other'}
+                            // {'key': 'Video', 'value': 'video'},
+                            // {'key': 'Audio', 'value': 'audio'},
+                            // {'key': 'Image', 'value': 'image'},
+                            // {'key': 'Document', 'value': 'document'},
+                            // {'key': 'Link', 'value': 'link'},
+                            // {'key': 'Other', 'value': 'other'}
                             ]
                               .map((studyMaterialType) => DropdownMenuItem(
                                     value: studyMaterialType['value'],
@@ -510,12 +510,7 @@ class _AddStudyMaterialViewState extends State<AddStudyMaterialView> {
                             final title = titleController.text; // Get the class name
                             final description = descriptionController.text; // Get the class description
                             // Debugging: Log the values
-          logger.d('Title: $title');
-          logger.d('Description: $description');
-          logger.d('Study Material Type: $studyMaterialType');
-          logger.d('Subject ID: $_subjectId');
-          logger.d('Class ID: $_classId');
-          logger.d('Teacher ID: $_teacherId');
+  
 
 // if (title.isNotEmpty && description.isNotEmpty && 
 //              studyMaterialType.isNotEmpty && _subjectId.isNotEmpty && 
