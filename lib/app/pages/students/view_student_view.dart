@@ -38,6 +38,8 @@ class _ViewStudentViewState extends State<ViewStudentView> {
     phoneNumber: '',
     alternatePhoneNumber: '',
     rollNo: '',
+    schoolIdRollNumber: '',
+    schoolInstitutionName: '',
     email: '',
     board: Board(id: '', name: '', description: '', boardImage: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
     classInfo: ClassInfo(id: '', name: '', description: '', classImage: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),

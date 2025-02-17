@@ -13,12 +13,14 @@ class Student {
   final String? alternatePhoneNumber;
   final String rollNo;
   final String adharNumber;
+  final String schoolIdRollNumber;
   final String dateOfBirth;
   final String gender;
   final String category;
   final String disability;
   final String typeOfInstitution;
   final ClassInfo classInfo;
+  final String schoolInstitutionName;
   final Board board;
   final String password;
   final DateTime createdAt;
@@ -32,13 +34,15 @@ class Student {
     required this.motherName,
     required this.email,
     required this.phoneNumber,
-    this.alternatePhoneNumber,
+    this.alternatePhoneNumber,    
     required this.rollNo,
     required this.adharNumber,
+    required this.schoolIdRollNumber,
     required this.dateOfBirth,
     required this.gender,
     required this.category,
     required this.disability,
+    required this.schoolInstitutionName,
     required this.typeOfInstitution,
     required this.classInfo,
     required this.board,
@@ -60,11 +64,14 @@ class Student {
       alternatePhoneNumber: json['alternatePhoneNumber'] ?? '',
       rollNo: json['rollNo'],
       adharNumber: json['adharNumber'],
-      dateOfBirth: json['dateOfBirth'],
+      schoolIdRollNumber: json['schoolIdRollNumber'],
+      schoolInstitutionName: json['schoolInstitutionName'],
+      dateOfBirth: json['dateOfBirth'], 
       gender: json['gender'],
       category: json['category'],
       disability: json['disability'],
       typeOfInstitution: json['typeOfInstitution'],
+
       classInfo: ClassInfo.fromJson(json['class']), // Use ClassInfo.fromJson
       board: Board.fromJson(json['board']), // Use Board.fromJson
       password: json['password'],
@@ -85,12 +92,15 @@ class Student {
       'alternatePhoneNumber': alternatePhoneNumber ?? '',
       'rollNo': rollNo,
       'adharNumber': adharNumber,
+      'schoolIdRollNumber': schoolIdRollNumber,
+      'schoolInstitutionName': schoolInstitutionName,
       'dateOfBirth': dateOfBirth,
       'gender': gender,
       'category': category,
       'disability': disability,
       'typeOfInstitution': typeOfInstitution,
       'class': classInfo.toJson(),
+
       'board': board.toJson(),
       'password': password,
       'createdAt': createdAt.toIso8601String(),

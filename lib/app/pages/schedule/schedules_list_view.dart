@@ -17,6 +17,9 @@ import '../../models/subject/subject.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 
 class SchedulesListView extends StatefulWidget {
   const SchedulesListView({super.key});
@@ -26,8 +29,12 @@ class SchedulesListView extends StatefulWidget {
 }
 
 class _SchedulesListViewState extends State<SchedulesListView> {
+  final String API_BASE_URL = 'https://apkobi.com/api';
   List<Subject> _subjects = [];
   int _totalSubjects = 0;
+
+
+  List<dynamic> _routinesList = [];
 
   bool _isLoading = true;
   final SubjectService _subjectService = SubjectService();
@@ -46,8 +53,9 @@ class _SchedulesListViewState extends State<SchedulesListView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
-    _fetchSubjects();
+    _fetchRoutines();
   }
+
 
   @override
   void dispose() {
@@ -124,12 +132,108 @@ class _SchedulesListViewState extends State<SchedulesListView> {
     }
   }
 
+  Future<void> _deleteRoutine(String routineId, String token) async {
+  // Show confirmation dialog before deleting
+  bool? confirmDelete = await _showDeleteConfirmationDialog();
+  if (confirmDelete == true) {
+    try {
+      // Call the API to delete the routine
+      final response = await http.delete(
+        Uri.parse('$API_BASE_URL/routine/$routineId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Successfully deleted, now refresh the routines list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Routine deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _fetchRoutines();
+      } else {
+        // Handle error response
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete routine'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle error appropriately
+      print('Error deleting routine: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete routine: $e')),
+      );
+    }
+  }
+}
+
   ///_____________________________________________________________________Search_query_________________________
   void _setSearchQuery(String query) {
     setState(() {
       _searchQuery = query;
     });
   }
+
+Future<void> _fetchRoutines() async {
+  _isLoading = true;
+    final url = '$API_BASE_URL/routine/all';
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _routinesList = jsonDecode(response.body);
+          logger.d('Fetched ${_routinesList.length} routines');
+          logger.d('routines: $_routinesList');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Routines fetched successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _isLoading = false;
+        });
+      } else {
+        logger.e('Failed to fetch routines: ${response.body}');
+
+        // Optionally show an error message to the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to fetch routines'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        _isLoading = false;
+      }
+
+
+    } catch (e) {
+      logger.e('Error fetching routines: $e');
+      // Optionally show an error message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to fetch routines'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      _isLoading = false;
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -339,61 +443,38 @@ class _SchedulesListViewState extends State<SchedulesListView> {
         showBottomBorder: true,
         columns: const [
           DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Image')),
           DataColumn(label: Text('Name')),
-          DataColumn(label: Text('Class')),
-          // DataColumn(label: Text('Description')),
           DataColumn(label: Text('Action')),
         ],
-        rows: _subjects.asMap().entries.map(
+        rows: _routinesList.asMap().entries.map(
           (entry) {
             final index = entry.key + 1;
-            final subject = entry.value;
+            final routine = entry.value;
             return DataRow(
               cells: [
                 DataCell(Text(index.toString())),
-                DataCell(
-                  ClipOval(
-                    child: Image.network(
-                      'https://bbose.online/wp-content/uploads/2024/12/${subject.subjectImage}', 
-                      width: 50, 
-                      height: 50, 
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                DataCell(Text(subject.name)),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: true
-                          ? AcnooAppColors.kSuccess.withOpacity(0.2)
-                          : AcnooAppColors.kError.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    child: Text(
-                      subject.classId ?? 'No Class',
-                      style: textTheme.bodySmall?.copyWith(
-                          color: true
-                              ? AcnooAppColors.kSuccess
-                              : AcnooAppColors.kError),
-                    ),
-                  ),
-                ),
-                // DataCell(Text(subjectInfo.description)),
+                DataCell(Text(routine['board']['name']+" "+routine['class']['name']+" "+routine['year'].toString()+" Routine")),
                 DataCell(
                   Row(
                     children: [
                       IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/subject-profile', extra: subject.id);
+                        context.go('/dashboard/schedule/view-schedule/${routine['_id']}');
                       }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+
+
                       IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/edit-subject');
+                        context.go('/dashboard/schedule/edit-schedule/${routine['_id']}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+
+
+
                       IconButton(onPressed: () async {
-                        await _deleteSubject(subject.id, token);
+                        await _deleteRoutine(routine['_id'].toString(), token);
                       }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
+
+
+
+
                     ],
                   ),
                 ),

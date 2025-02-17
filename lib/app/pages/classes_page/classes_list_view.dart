@@ -364,12 +364,14 @@ class _ClassesListViewState extends State<ClassesListView> {
                 DataCell(
                   Row(
                     children: [
+                      // IconButton(onPressed: () {
+                      //   context.go('/dashboard/classes/view-class/${classInfo.id}');
+                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+
                       IconButton(onPressed: () {
-                        context.go('/dashboard/classes/class-profile', extra: classInfo.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/classes/edit-class');
+                        context.go('/dashboard/classes/edit-class/${classInfo.id}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+
                       IconButton(onPressed: () async {
                         await _deleteClass(classInfo.id, token);
                       }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),

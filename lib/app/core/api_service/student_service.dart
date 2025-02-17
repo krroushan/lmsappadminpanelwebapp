@@ -88,6 +88,26 @@ class StudentService {
       throw Exception('Failed to fetch student');
     }
   }
+
+  // Update a student
+  Future<Student> updateStudent(String studentId, Map<String, dynamic> updateData, String token) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/student/$studentId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(updateData),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return Student.fromJson(responseData['student']);
+    } else {
+      final Map<String, dynamic> errorResponse = jsonDecode(response.body);
+      throw Exception(errorResponse['message'] ?? 'Failed to update student');
+    }
+  }
 }
 
 

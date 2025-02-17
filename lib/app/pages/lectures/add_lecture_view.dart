@@ -1,5 +1,6 @@
 // 🐦 Flutter imports:
 import 'dart:typed_data';
+import 'package:acnoo_flutter_admin_panel/generated/l10n.dart';
 import 'package:flutter/foundation.dart'; 
 
 import 'package:flutter/material.dart';
@@ -24,6 +25,8 @@ import '../../models/subject/subject.dart';
 import '../../models/teacher/teacher.dart';
 import '../../core/api_service/subject_service.dart';
 import '../../core/api_service/teacher_service.dart';
+import '../../core/api_service/board_service.dart';
+import '../../models/board/board.dart';
 
 
 class AddLectureView extends StatefulWidget {
@@ -58,6 +61,7 @@ class _AddLectureViewState extends State<AddLectureView> {
   bool isCustomFormChecked = false;
   String token = '';
 
+  String _boardId = '';
   String _classId = "";
   String _subjectId = "";
   String _teacherId = "";
@@ -117,6 +121,7 @@ class _AddLectureViewState extends State<AddLectureView> {
       String title, 
       String description, 
       String recordingUrl, 
+      String boardId,
       String classId, 
       String subjectId, 
       String teacherId, 
@@ -165,6 +170,7 @@ class _AddLectureViewState extends State<AddLectureView> {
         lectureType, 
         videoBytes,
         selectedVideo!.name,
+        boardId,
         classId, 
         subjectId, 
         teacherId, 
@@ -180,6 +186,7 @@ class _AddLectureViewState extends State<AddLectureView> {
         imageBytes!, 
         selectedImage!.name,
         lectureType, 
+        boardId,
         classId, 
         subjectId, 
         teacherId, 
@@ -225,6 +232,7 @@ class _AddLectureViewState extends State<AddLectureView> {
     if (authProvider.getRole == 'teacher') {
       _teacherId = authProvider.getUserId;
     }
+    _fetchBoardList();
     _fetchClassList();
     _fetchSubjectList();
     // Only fetch teacher list if user is not a teacher
@@ -237,11 +245,14 @@ class _AddLectureViewState extends State<AddLectureView> {
   final _classService = ClassService();
   final _subjectService = SubjectService();
   final _teacherService = TeacherService();
+  final _boardService = BoardService();
 
 // class list
+
   List<ClassInfo> _classList = [];
   List<Subject> _subjectList = [];
   List<Teacher> _teacherList = [];
+  List<Board> _boardList = [];
 
   // fetch class list
   Future<void> _fetchClassList() async {
@@ -264,6 +275,14 @@ class _AddLectureViewState extends State<AddLectureView> {
     final teacherList = await _teacherService.fetchAllTeachers(token);
     setState(() {
       _teacherList = teacherList;
+    });
+  }
+
+  // fetch board list
+  Future<void> _fetchBoardList() async {
+    final boardList = await _boardService.fetchAllBoards(token);
+    setState(() {
+      _boardList = boardList;
     });
   }
 
@@ -397,6 +416,43 @@ class _AddLectureViewState extends State<AddLectureView> {
                     ),
                   ),
 
+                  // Boards
+                  ResponsiveGridCol(
+                    lg: 4,
+                    md: 6,
+                    child: Padding(
+                      padding:
+                          EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                      child: TextFieldLabelWrapper(
+                        labelText: 'Board',
+                        inputField: DropdownButtonFormField2(
+                          menuItemStyleData: _dropdownStyle.menuItemStyle,
+                          buttonStyleData: _dropdownStyle.buttonStyle,
+                          iconStyleData: _dropdownStyle.iconStyle,
+                          dropdownStyleData: _dropdownStyle.dropdownStyle,
+                          hint: const Text('Select board'),
+                          items: _boardList
+                              .map((board) => DropdownMenuItem(
+                                    value: board.id,
+                                    child: Text(board.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _boardId = value as String;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select board';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
                   // Classes
                   ResponsiveGridCol(
                     lg: 4,
@@ -515,7 +571,7 @@ class _AddLectureViewState extends State<AddLectureView> {
                     child: Padding(
                       padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Input Date',
+                        labelText: 'Start Date',
                         inputField: TextFormField(
                           controller: startDateController,
                           keyboardType: TextInputType.visiblePassword,
@@ -798,6 +854,7 @@ class _AddLectureViewState extends State<AddLectureView> {
                                   title, 
                                   description, 
                                   recordingUrl, 
+                                  _boardId,
                                   _classId, 
                                   _subjectId, 
                                   _teacherId, 

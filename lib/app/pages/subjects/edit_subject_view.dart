@@ -22,14 +22,18 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:logger/logger.dart';
 
 class EditSubjectView extends StatefulWidget {
-  const EditSubjectView({super.key});
+  final String subjectId;
+  const EditSubjectView({super.key, required this.subjectId});
+
 
   @override
   State<EditSubjectView> createState() => _EditSubjectViewState();
+
 }
 
 class _EditSubjectViewState extends State<EditSubjectView> {
   var logger = Logger();
+
 
   final browserDefaultFormKey = GlobalKey<FormState>();
   bool isBrowserDefaultChecked = false;
@@ -47,6 +51,8 @@ class _EditSubjectViewState extends State<EditSubjectView> {
   String token = '';
 
   String _classId = "";
+
+  final _subjectService = SubjectService();
 
   // Declare TextEditingControllers
   final TextEditingController subjectNameController = TextEditingController();
@@ -72,52 +78,19 @@ class _EditSubjectViewState extends State<EditSubjectView> {
     print("selectedImage: ${selectedImage!.name}");
   }
 
-// Create Class method
-  Future<void> _createSubject(
-      String subjectName, String subjectDescription, String classId) async {
-    logger.d('subjectName: $subjectName');
-    logger.d('subjectDescription: $subjectDescription');
-    logger.d('classId: $classId');
-    setState(() => _isLoading = true);
-    try {
-      // Create an instance of the ClassService
-      final subjectService = SubjectService();
+// fetch existing subject data
+Future<void> _fetchExistingSubject() async {
+  final subject = await _subjectService.fetchSubjectById(widget.subjectId, token);
+  setState(() {
+    subjectNameController.text = subject.name;
+    _classId = subject.classId;
+    subjectDescriptionController.text = subject.description;
+    subjectImageController.text = subject.subjectImage;
+  });
+}
 
-      // Prepare the image data for upload
-      Uint8List? imageBytes = selectedImage?.bytes;
 
-      final response = await subjectService.createSubject(subjectName,
-          subjectDescription, imageBytes!, selectedImage!.name, token, classId);
-      logger.d('response: ${response.message}');
-      // Check if the response is successful
-      if (response.success) {
-        // Handle the successful response (e.g., show a success message)
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Subject created successfully',
-                  style: TextStyle(color: Colors.green))),
-        );
-        context.go('/dashboard/subjects/all-subjects');
-      } else {
-        // Handle the case where the response is null or not successful
-        print(
-            'Failed to create subject1: ${response.message}'); // Log the error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(response.message,
-                  style: const TextStyle(color: Colors.red))),
-        );
-      }
-    } catch (e) {
-      // Catch any errors and display a message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error1: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
 
   @override
   void initState() {
@@ -126,7 +99,9 @@ class _EditSubjectViewState extends State<EditSubjectView> {
     authProvider.checkAuthentication();
     token = authProvider.getToken;
     _fetchClassList();
+    _fetchExistingSubject();
   }
+
 
 // class service
   final _classService = ClassService();
@@ -334,8 +309,9 @@ class _EditSubjectViewState extends State<EditSubjectView> {
                                 .text; // Get the class image
 
                             // Call the method to create a student
-                            _createSubject(
-                                subjectName, subjectDescription, _classId);
+                            // _updateSubject(
+                            //     subjectName, subjectDescription, _classId);
+
                           }
                         },
                         child: _isLoading

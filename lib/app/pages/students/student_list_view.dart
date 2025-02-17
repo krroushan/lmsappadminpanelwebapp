@@ -1,6 +1,3 @@
-// 🎯 Dart imports:
-import 'package:faker/faker.dart';
-
 // 🐦 Flutter imports:
 import 'package:flutter/material.dart';
 
@@ -17,7 +14,6 @@ import '../../widgets/widgets.dart';
 import '../../core/api_service/student_service.dart';
 import '../../models/student/student_all_response.dart';
 import '../../models/student/student.dart';
-import '../../models/student/student_create.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -522,7 +518,7 @@ class _StudentListViewState extends State<StudentListView> {
                         context.go('/dashboard/students/student-profile/${student.id}');
                       }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
                       IconButton(onPressed: () {
-                        context.go('/dashboard/students/edit-student');
+                        context.go('/dashboard/students/edit-student/${student.id}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
                       IconButton(onPressed: () {
                         _deleteStudent(student.id);

@@ -8,34 +8,100 @@ import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
+import 'package:go_router/go_router.dart';
 
 // 🌎 Project imports:
-import '../../../generated/l10n.dart' as l;
 import '../../core/helpers/field_styles/field_styles.dart';
 import '../../core/static/static.dart';
 import '../../widgets/widgets.dart';
+import '../../core/api_service/teacher_service.dart';
+import '../../models/teacher/teacher_create.dart';
+import '../../providers/_auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class EditTeacherView extends StatefulWidget {
-  const EditTeacherView({super.key});
+  final String teacherId;
+  const EditTeacherView({super.key, required this.teacherId});
+
 
   @override
     State<EditTeacherView> createState() => _EditTeacherViewState();
 }
 
 class _EditTeacherViewState extends State<EditTeacherView> {
+  final _browserDefaultFormKey = GlobalKey<FormState>();
   // Field State Props
   bool _obscureText = true;
-  late final _dateController = TextEditingController();
+  //late final _dateController = TextEditingController();
+  final _usernameController = TextEditingController();
+
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  //final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  //final _addressController = TextEditingController();
+
+  final _teacherService = TeacherService();
+
+  String token = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.checkAuthentication();
+    token = authProvider.getToken;
+  }
+
+     // new method to create a teacher and send to API
+  Future<void> _createTeacher(String username, String fullName, String email, String password) async {
+    // Generate a fake teacher with valid data
+    final teacherData = TeacherCreate.fromJson({
+      "fullName": fullName, 
+      "email": email, 
+      "username": username, 
+      "password": password, 
+    });
+
+    print("Teacher Data: ${teacherData.toJson()}");
+
+    try {
+      // Send the fake teacher to the API
+        await _teacherService.createTeacher(teacherData, token);
+      //after success
+      context.go('/dashboard/teachers/all-teachers');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Teacher created successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error creating teacher: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create teacher: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
-    _dateController.dispose();
+    //_dateController.dispose();
+    _usernameController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    //_phoneController.dispose();
+    _passwordController.dispose();
+    //_addressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final lang = l.S.of(context);
     final _theme = Theme.of(context);
     final _dropdownStyle = AcnooDropdownStyle(context);
     final _inputFieldStyle = AcnooInputFieldStyles(context);
@@ -59,15 +125,17 @@ class _EditTeacherViewState extends State<EditTeacherView> {
     ).value;
 
     return Scaffold(
-      body: ListView(
+      body: Form(
+        key: _browserDefaultFormKey,
+        child: ListView(
         padding: _sizeInfo.padding,
         children: [
           // Input Example
           ShadowContainer(
-            headerText: 'Edit Teacher',
+            headerText: 'Add Teacher',
             child: ResponsiveGridRow(
               children: [
-                // Name
+                // Username
                 ResponsiveGridCol(
                   lg: _lg,
                   md: _md,
@@ -75,9 +143,39 @@ class _EditTeacherViewState extends State<EditTeacherView> {
                     padding: EdgeInsetsDirectional.all(
                         _sizeInfo.innerSpacing / 2),
                     child: TextFieldLabelWrapper(
-                      labelText: 'Name',
+                      labelText: 'Username',
                       inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Name'),
+                        controller: _usernameController,
+                        decoration: const InputDecoration(hintText: 'Username'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Username is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Full Name
+                ResponsiveGridCol(
+                  lg: _lg,
+                  md: _md,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.all(
+                        _sizeInfo.innerSpacing / 2),
+                    child: TextFieldLabelWrapper(
+                      labelText: 'Full Name',
+                      inputField: TextFormField(
+                        controller: _fullNameController,
+                        decoration: const InputDecoration(hintText: 'Full Name'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Full Name is required';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ),
@@ -93,142 +191,149 @@ class _EditTeacherViewState extends State<EditTeacherView> {
                     child: TextFieldLabelWrapper(
                       labelText: 'Email',
                       inputField: TextFormField(
+                        controller: _emailController,
                         decoration: const InputDecoration(hintText: 'Email'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Phone
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Phone',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Phone'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Roll Number
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Roll Number',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Roll Number'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Gender
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Gender',
-                      inputField: DropdownButtonFormField2(
-                        menuItemStyleData: _dropdownStyle.menuItemStyle,
-                        buttonStyleData: _dropdownStyle.buttonStyle,
-                        iconStyleData: _dropdownStyle.iconStyle,
-                        dropdownStyleData: _dropdownStyle.dropdownStyle,
-                        // hint: const Text('Select'),
-                        hint: Text(lang.select),
-                        items: List.generate(
-                          5,
-                          (index) => DropdownMenuItem(
-                            value: index + 1,
-                            child: Text('${lang.dropdown} ${index + 1}'),
-                          ),
-                        ),
-                        onChanged: (value) {},
-                      ),
-                    ),
-                  ),
-                ),
-
-                //  Date of Birth
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Date of Birth',
-                      inputField: TextFormField(
-                        controller: _dateController,
-                        keyboardType: TextInputType.visiblePassword,
-                        readOnly: true,
-                        selectionControls: EmptyTextSelectionControls(),
-                        decoration: InputDecoration(
-                          hintText: 'mm/dd/yyyy',
-                          suffixIcon:
-                              const Icon(IconlyLight.calendar, size: 20),
-                          suffixIconConstraints:
-                              _inputFieldStyle.iconConstraints,
-                        ),
-                        onTap: () async {
-                          final _result = await showDatePicker(
-                            context: context,
-                            firstDate: AppDateConfig.appFirstDate,
-                            lastDate: AppDateConfig.appLastDate,
-                            initialDate: DateTime.now(),
-                            builder: (context, child) => Theme(
-                              data: _theme.copyWith(
-                                datePickerTheme: DatePickerThemeData(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                              child: child!,
-                            ),
-                          );
-
-                          if (_result != null) {
-                            // setState(() => )
-                            _dateController.text = DateFormat(
-                                    AppDateConfig.appNumberOnlyDateFormat)
-                                .format(_result);
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Email is required';
                           }
+                          return null;
                         },
                       ),
                     ),
                   ),
                 ),
 
+                // Phone
+                // ResponsiveGridCol(
+                //   lg: _lg,
+                //   md: _md,
+                //   child: Padding(
+                //     padding: EdgeInsetsDirectional.all(
+                //         _sizeInfo.innerSpacing / 2),
+                //     child: TextFieldLabelWrapper(
+                //       labelText: 'Phone',
+                //       inputField: TextFormField(
+                //         controller: _phoneController,
+                //         decoration: const InputDecoration(hintText: 'Phone'),
+                //         validator: (value) {
+                //           if (value == null || value.isEmpty) {
+                //             return 'Phone is required';
+                //           }
+                //           return null;
+                //         },
+                //       ),
+                //     ),
+                //   ),
+                // ),
+
+                // Gender
+                // ResponsiveGridCol(
+                //   lg: _lg,
+                //   md: _md,
+                //   child: Padding(
+                //     padding:
+                //         EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                //     child: TextFieldLabelWrapper(
+                //       labelText: 'Gender',
+                //       inputField: DropdownButtonFormField2(
+                //         menuItemStyleData: _dropdownStyle.menuItemStyle,
+                //         buttonStyleData: _dropdownStyle.buttonStyle,
+                //         iconStyleData: _dropdownStyle.iconStyle,
+                //         dropdownStyleData: _dropdownStyle.dropdownStyle,
+                //         hint: const Text('Gender'),
+                //         items: const [
+                //           DropdownMenuItem(
+                //             value: 1,
+                //             child: Text('Male'),
+                //           ),
+                //           DropdownMenuItem(
+                //             value: 2,
+                //             child: Text('Female'),
+                //           ),
+                //         ],
+                //         onChanged: (value) {},
+                //       ),
+                //     ),
+                //   ),
+                // ),
+
+                //  Date of Birth
+                // ResponsiveGridCol(
+                //   lg: _lg,
+                //   md: _md,
+                //   child: Padding(
+                //     padding:
+                //         EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                //     child: TextFieldLabelWrapper(
+                //       labelText: 'Date of Birth',
+                //       inputField: TextFormField(
+                //         controller: _dateController,
+                //         keyboardType: TextInputType.visiblePassword,
+                //         readOnly: true,
+                //         selectionControls: EmptyTextSelectionControls(),
+                //         decoration: InputDecoration(
+                //           hintText: 'mm/dd/yyyy',
+                //           suffixIcon:
+                //               const Icon(IconlyLight.calendar, size: 20),
+                //           suffixIconConstraints:
+                //               _inputFieldStyle.iconConstraints,
+                //         ),
+                //         onTap: () async {
+                //           final _result = await showDatePicker(
+                //             context: context,
+                //             firstDate: AppDateConfig.appFirstDate,
+                //             lastDate: AppDateConfig.appLastDate,
+                //             initialDate: DateTime.now(),
+                //             builder: (context, child) => Theme(
+                //               data: _theme.copyWith(
+                //                 datePickerTheme: DatePickerThemeData(
+                //                   shape: RoundedRectangleBorder(
+                //                     borderRadius: BorderRadius.circular(4),
+                //                   ),
+                //                 ),
+                //               ),
+                //               child: child!,
+                //             ),
+                //           );
+
+                //           if (_result != null) {
+                //             // setState(() => )
+                //             _dateController.text = DateFormat(
+                //                     AppDateConfig.appNumberOnlyDateFormat)
+                //                 .format(_result);
+                //           }
+                //         },
+                //       ),
+                //     ),
+                //   ),
+                // ),
+
                 // Address
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                      child: TextFieldLabelWrapper(
-                      labelText: 'Address',
-                      inputField: TextFormField(
-                        maxLines: 2,
-                        decoration: const InputDecoration(
-                          hintText: 'Address',
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // ResponsiveGridCol(
+                //   lg: _lg,
+                //   md: _md,
+                //   child: Padding(
+                //     padding:
+                //         EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                //       child: TextFieldLabelWrapper(
+                //       labelText: 'Address',
+                //       inputField: TextFormField(
+                //         controller: _addressController,
+                //         maxLines: 2,
+                //         decoration: const InputDecoration(
+                //           hintText: 'Address',
+                //         ),
+                //         // validator: (value) {
+                //         //   if (value == null || value.isEmpty) {
+                //         //     return 'Address is required';
+                //         //   }
+                //         //   return null;
+                //         // },
+                //       ),
+                //     ),
+                //   ),
+                // ),
               
                        //  Password Field
                 ResponsiveGridCol(
@@ -242,6 +347,7 @@ class _EditTeacherViewState extends State<EditTeacherView> {
                         return TextFieldLabelWrapper(
                           labelText: 'Password',
                           inputField: TextFormField(
+                            controller: _passwordController,
                             keyboardType: TextInputType.visiblePassword,
                             obscureText: _obscureText,
                             obscuringCharacter: '*',
@@ -267,6 +373,12 @@ class _EditTeacherViewState extends State<EditTeacherView> {
                               suffixIconConstraints:
                                   _inputFieldStyle.iconConstraints,
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Password is required';
+                              }
+                              return null;
+                            },
                           ),
                         );
                       },
@@ -275,28 +387,28 @@ class _EditTeacherViewState extends State<EditTeacherView> {
                 ),
 
                 // Upload Photo
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                        padding: EdgeInsetsDirectional.all(
-                          _sizeInfo.innerSpacing / 2,
-                        ),
-                        child: TextFieldLabelWrapper(
-                          labelText: 'Upload Photo',
-                          inputField: AcnooFileInputField(
-                            onTap: () {},
-                            decoration: const InputDecoration(
-                              hintText: 'Upload Photo',
-                              contentPadding: EdgeInsetsDirectional.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                // ResponsiveGridCol(
+                //   lg: _lg,
+                //   md: _md,
+                //   child: Padding(
+                //         padding: EdgeInsetsDirectional.all(
+                //           _sizeInfo.innerSpacing / 2,
+                //         ),
+                //         child: TextFieldLabelWrapper(
+                //           labelText: 'Upload Photo',
+                //           inputField: AcnooFileInputField(
+                //             onTap: () {},
+                //             decoration: const InputDecoration(
+                //               hintText: 'Upload Photo',
+                //               contentPadding: EdgeInsetsDirectional.symmetric(
+                //                 horizontal: 16,
+                //                 vertical: 12,
+                //               ),
+                //             ),
+                //           ),
+                //         ),
+                //       ),
+                //     ),
 
               ],
             ),
@@ -307,11 +419,15 @@ Padding(
             child: ElevatedButton(
               onPressed: () {
                 // Add your update logic here
+                if (_browserDefaultFormKey.currentState!.validate()) {
+                  _createTeacher(_usernameController.text, _fullNameController.text, _emailController.text, _passwordController.text);
+                }
               },
-              child: Text('Update Student'),
+              child: const Text('Create Teacher'),
             ),
           ),
       ],
+      ),
       ),
     );
   }

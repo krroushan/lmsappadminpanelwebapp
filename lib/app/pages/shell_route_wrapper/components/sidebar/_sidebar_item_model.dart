@@ -121,6 +121,14 @@ List<GroupedMenuModel> _groupedMenus(BuildContext context) {
               name: "Add Exam",
               navigationPath: "add-exam",
             ),
+            SidebarSubmenuModel(
+              name: "All Questions",
+              navigationPath: "all-questions",
+            ),
+            SidebarSubmenuModel(
+              name: "Add Question",
+              navigationPath: "add-question",
+            ),
           ],
         ),
 
@@ -156,10 +164,6 @@ List<GroupedMenuModel> _groupedMenus(BuildContext context) {
             SidebarSubmenuModel(
               name: "Add Schedule",
               navigationPath: "add-schedule",
-            ),
-            SidebarSubmenuModel(
-              name: "View Schedule",
-              navigationPath: "view-schedule",
             ),
           ],
         ),
@@ -268,6 +272,28 @@ List<GroupedMenuModel> _groupedMenus(BuildContext context) {
             SidebarSubmenuModel(
               name: "Add Admin",
               navigationPath: "add-admin",
+            ),
+          ],
+        ),
+
+        if (userRole == 'admin')
+        SidebarItemModel(
+          name: 'Settings',
+          iconPath: Icons.settings,
+          navigationPath: '/dashboard/settings',
+          sidebarItemType: SidebarItemType.submenu,
+          submenus: [
+            SidebarSubmenuModel(
+              name: "Admin Setting",
+              navigationPath: "admin-setting",
+            ),
+            SidebarSubmenuModel(
+              name: "App Setting",
+              navigationPath: "app-setting",
+            ),
+            SidebarSubmenuModel(
+              name: "Page Setting",
+              navigationPath: "page-setting",
             ),
           ],
         ),

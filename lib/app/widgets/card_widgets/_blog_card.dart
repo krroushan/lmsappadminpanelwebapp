@@ -15,6 +15,7 @@ class BlogCardWidget extends StatefulWidget {
     this.lectureType,
     this.createdBy,
     this.createdDate,
+    this.recordingUrl,  // Add this line
     required this.onDelete,
     this.streamId,
   });
@@ -31,6 +32,7 @@ class BlogCardWidget extends StatefulWidget {
   final String? subject;
   final Future<void> Function(String?) onDelete;  // Add this line
   final String? lectureType;
+  final String? recordingUrl;  // Add this line
   final String? streamId;
   @override
   State<BlogCardWidget> createState() => _BlogCardWidgetState();

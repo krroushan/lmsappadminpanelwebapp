@@ -1,11 +1,15 @@
+import '../classes/class_info.dart';
 import 'question.dart';
+import '../subject/subject.dart';
+import '../board/board.dart';
 
-class Exam {
+class GetExam {
+  final String id;
   final String title;
   final String? description;
-  final String subjectId;
-  final String classId;
-  final String boardId;
+  final Subject subject;
+  final ClassInfo classInfo;
+  final Board board;
   final List<Question> questions;
   final int duration;
   final int numberOfQuestions;
@@ -16,12 +20,13 @@ class Exam {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  Exam({
+  GetExam({
+    required this.id,
     required this.title,
     this.description,
-    required this.subjectId,
-    required this.classId,
-    required this.boardId,
+    required this.subject,
+    required this.classInfo,
+    required this.board,
     required this.questions,
     required this.duration,
     required this.numberOfQuestions,
@@ -33,16 +38,17 @@ class Exam {
     this.updatedAt,
   });
 
-  factory Exam.fromJson(Map<String, dynamic> json) {
+  factory GetExam.fromJson(Map<String, dynamic> json) {
     var questionsFromJson = json['questions'] as List;
     List<Question> questionsList = questionsFromJson.map((i) => Question.fromJson(i)).toList();
 
-    return Exam(
+    return GetExam(
+      id: json['_id'],
       title: json['title'],
       description: json['description'],
-      subjectId: json['subject'],
-      classId: json['class'],
-      boardId: json['board'],
+      subject: Subject.fromJson(json['subject']),
+      classInfo: ClassInfo.fromJson(json['class']),
+      board: Board.fromJson(json['board']),
       questions: questionsList,
       duration: json['duration'],
       numberOfQuestions: json['numberOfQuestions'],
@@ -57,11 +63,12 @@ class Exam {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'description': description,
-      'subject': subjectId,
-      'class': classId,
-      'board': boardId,
+      'subject': subject,
+      'class': classInfo,
+      'board': board,
       'questions': questions.map((question) => question.toJson()).toList(),
       'duration': duration,
       'numberOfQuestions': numberOfQuestions,
@@ -69,6 +76,8 @@ class Exam {
       'isActive': isActive,
       'createdBy': createdBy,
       'createdByModel': createdByModel,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 }

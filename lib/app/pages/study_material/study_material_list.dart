@@ -359,9 +359,9 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
                       DataCell(
                         Row(
                           children: [
-                            IconButton(onPressed: () {
-                              context.go('/dashboard/study-materials/study-material-profile', extra: studyMaterialInfo.id);
-                            }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+                            // IconButton(onPressed: () {
+                            //   context.go('/dashboard/study-materials/study-material-profile', extra: studyMaterialInfo.id);
+                            // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
                             IconButton(onPressed: () {
                               context.go('/dashboard/study-materials/update-study-material/${studyMaterialInfo.id}');
                             }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),

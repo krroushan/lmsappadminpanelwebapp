@@ -103,4 +103,24 @@ Future<void> deleteSubject(String subjectId, String token) async {
       throw Exception('Failed to delete class');
     }
   }
+
+  // fetch subject by id
+Future<Subject> fetchSubjectById(String subjectId, String token) async {
+  final response = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}/subject/$subjectId'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+    return Subject.fromJson(jsonResponse);
+  } else {
+    //logger.e('Failed to fetch subject');
+    throw Exception('Failed to fetch subject');
+  }
 }
+}
+
+

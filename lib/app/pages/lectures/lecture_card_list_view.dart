@@ -95,7 +95,7 @@ class _LectureCardListViewState extends State<LectureCardListView> {
     try {
       List<Lecture> response = await _lectureService.fetchAllLectures(token); // Fetch the response
       
-      logger.i('Lectures fetched successfullyname: ${response[0].title}');
+      logger.i('Lectures fetched successfullyname: ${response.length}');
       setState(() {
           _lectures = response;
         _totalLectures = response.length;
@@ -219,11 +219,12 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                             lectureId: entry.value.id,
                             createdBy: entry.value.teacher?.fullName ?? '',
                             createdDate: entry.value.createdAt,
-                            board: 'CBSE',
-                            className: 'Class 10',
-                            subject: 'Maths',
+                            board: entry.value.board?.name ?? '',
+                            className: entry.value.classInfo?.name ?? '',
+                            subject: entry.value.subject?.name ?? '',
                             lectureType: entry.value.lectureType,
                             streamId: entry.value.streamId,
+                            recordingUrl: entry.value.recordingUrl,
                             onDelete: _deleteLecture,
                           ),
                         ),

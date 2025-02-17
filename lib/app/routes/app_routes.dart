@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // 🌎 Project imports:
+import '../pages/classes_page/edit_class_view.dart';
+import '../pages/exams/add_question_view.dart';
+import '../pages/exams/question_list_view.dart';
 import '../pages/pages.dart';
 import '../pages/classes_page/classes_list_view.dart';
 import '../pages/classes_page/add_class_view.dart';
 import '../pages/students/edit_student_view.dart';
 import '../pages/students/add_student_view.dart';
+import '../pages/subjects/edit_subject_view.dart';
 import '../pages/teachers/teacher_list_view.dart';
 import '../pages/teachers/add_teacher_view.dart';
 import '../pages/teachers/edit_teacher_view.dart'; 
@@ -40,14 +44,12 @@ import '../pages/syllabus/view_pdf_syllabus_view.dart';
 import '../pages/schedule/view_schedule_view.dart';
 import '../pages/schedule/add_schedule_view.dart';
 import '../pages/schedule/schedules_list_view.dart';
-import '../pages/dashboard/pages/_influencer_admin_dashboard/_influencer_admin_dashboard.dart';
-import '../pages/dashboard/pages/_erp_admin_dashboard/_erp_admin_dashboard.dart';
-import '../pages/dashboard/pages/_hrm_admin_dashboard/_hrm_admin_dashboard.dart';
-import '../pages/dashboard/pages/_pos_admin_dashboard/_pos_admin_dashboard.dart';
-import '../pages/dashboard/pages/_reward_earning_dashboard/_reward_earning_dashboard.dart';
 import '../pages/study_material/update_study_material.dart';
-import '../pages/landing_page/home_page.dart';
-
+import '../pages/settings/admin_setting_view.dart';
+import '../pages/settings/app_setting_view.dart';
+import '../pages/settings/page_setting_view.dart';
+import '../pages/lectures/edit_lecture_view.dart';
+import '../pages/schedule/edit_schedule_view.dart';
 abstract class AcnooAppRoutes {
   //--------------Navigator Keys--------------//
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -64,13 +66,13 @@ abstract class AcnooAppRoutes {
       final isAuthenticated = authProvider.isAuthenticated;
       final userRole = authProvider.getRole;
 
-      // If the user is not authenticated, redirect to login
-      // if (!isAuthenticated && state.fullPath != '/') {
-      //   return '/';
-      // }
+      //If the user is not authenticated, redirect to login
+      if (!isAuthenticated && state.fullPath != '/') {
+        return '/';
+      }
 
       // If the user is authenticated and tries to access '/login', redirect to the default route
-      if (isAuthenticated && state.fullPath == '/login') {
+      if (isAuthenticated && state.fullPath == '/') {
         return '/dashboard';
       }
 
@@ -103,18 +105,18 @@ abstract class AcnooAppRoutes {
 
       // Login Route
       GoRoute(
-        path: '/login',
+        path: '/',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SigninView(),
         ),
       ),
 
-      GoRoute(
-        path: '/',
-        pageBuilder: (context, state) => NoTransitionPage(
-          child: HomePage(),
-        ),
-      ),
+      // GoRoute(
+      //   path: '/',
+      //   pageBuilder: (context, state) => NoTransitionPage(
+      //     child: HomePage(),
+      //   ),
+      // ),
 
       // Global Shell Route
       ShellRoute(
@@ -175,12 +177,12 @@ GoRoute(
                   child: PublishLiveStream(streamId: state.pathParameters['streamId'] ?? ''),
                 ),
               ),
-              // GoRoute(
-              //   path: 'edit-lecture',
-              //   pageBuilder: (context, state) => const NoTransitionPage<void>(
-              //     child: EditLectureView(),
-              //   ),
-              // ),
+              GoRoute(
+                path: 'edit-lecture/:lectureId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditLectureView(lectureId: state.pathParameters['lectureId'] ?? ''),
+                ),
+              ),
               GoRoute(
                 path: 'view-lecture/:lectureId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
@@ -261,6 +263,18 @@ GoRoute(
                   child: AddExamView(),
                 ),
               ),
+              GoRoute(
+                path: 'all-questions',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: QuestionListView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-question',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AddQuestionView(),
+                ),
+              ),
             ],
           ),
 
@@ -288,9 +302,9 @@ GoRoute(
                 ),
               ),
               GoRoute(
-                path: 'edit-student',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: EditStudentView(),
+                path: 'edit-student/:studentId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditStudentView(studentId: state.pathParameters['studentId'] ?? ''),
                 ),
               ),
               GoRoute(
@@ -331,16 +345,16 @@ GoRoute(
                   child: AddScheduleView(),
                 ),
               ),
-              // GoRoute(
-              //   path: 'edit-schedule',
-              //   pageBuilder: (context, state) => const NoTransitionPage<void>(
-              //     child: EditScheduleView(),
-              //   ),
-              // ),
               GoRoute(
-                path: 'view-schedule',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: ViewScheduleView(),
+                path: 'edit-schedule/:scheduleId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditScheduleView(scheduleId: state.pathParameters['scheduleId'] ?? ''),
+                ),
+              ),
+              GoRoute(
+                path: 'view-schedule/:scheduleId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: ViewScheduleView(scheduleId: state.pathParameters['scheduleId'] ?? ''),
                 ),
               ),
             ],
@@ -406,9 +420,9 @@ GoRoute(
                 ),
               ),
               GoRoute(
-                path: 'edit-teacher',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: EditTeacherView(),
+                path: 'edit-teacher/:teacherId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditTeacherView(teacherId: state.pathParameters['teacherId'] ?? ''),
                 ),
               ),
               GoRoute(
@@ -442,16 +456,16 @@ GoRoute(
                   child: AddClassView(),
                 ),
               ),
+              // GoRoute(
+              //   path: 'class-profile',
+              //   pageBuilder: (context, state) => NoTransitionPage<void>(
+              //     child: UserProfileView(studentId: state.extra as String),
+              //   ),
+              // ),
               GoRoute(
-                path: 'class-profile',
+                path: 'edit-class/:classId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
-                  child: UserProfileView(studentId: state.extra as String),
-                ),
-              ),
-              GoRoute(
-                path: 'edit-class',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: UserProfileUpdateView(),
+                  child: EditClassView(classId: state.pathParameters['classId'] ?? ''),
                 ),
               ),
             ],
@@ -477,6 +491,12 @@ GoRoute(
                 path: 'add-subject',
                 pageBuilder: (context, state) => const NoTransitionPage<void>(
                   child: AddSubjectView(),
+                ),
+              ),
+              GoRoute(
+                path: 'edit-subject/:subjectId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditSubjectView(subjectId: state.pathParameters['subjectId'] ?? ''),
                 ),
               ),
             ],
@@ -546,6 +566,35 @@ GoRoute(
           ),
 
 
+GoRoute(
+            path: '/dashboard/settings',
+            redirect: (context, state) async {
+              if (state.fullPath == '/dashboard/settings') {
+                return '/dashboard/settings/admin-setting';
+              }
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: 'admin-setting',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AdminSettingView(),
+                ),
+              ),
+              GoRoute(
+                path: 'app-setting',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AppSettingView(),
+                ),
+              ),
+              GoRoute(
+                path: 'page-setting',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: PageSettingView(),
+                ),
+              ),
+            ],
+          ),
           // Dashboard Routes
           // GoRoute(
           //   path: '/dashboard',

@@ -4,19 +4,19 @@ class Option {
 
   Option({
     required this.optionText,
-    this.isCorrect = false,
+    required this.isCorrect,
   });
 
   factory Option.fromJson(Map<String, dynamic> json) {
     return Option(
-      optionText: json['optionText'],
+      optionText: json['optionText'].trim(),
       isCorrect: json['isCorrect'] ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'optionText': optionText,
+      'optionText': optionText.trim(),
       'isCorrect': isCorrect,
     };
   }

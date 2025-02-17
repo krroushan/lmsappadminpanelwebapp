@@ -387,12 +387,13 @@ class _SubjectListViewState extends State<SubjectListView> {
                 DataCell(
                   Row(
                     children: [
+                      // IconButton(onPressed: () {
+                      //   context.go('/dashboard/subjects/view-subject/${subject.id}');
+                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
                       IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/subject-profile', extra: subject.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/subjects/edit-subject');
+                        context.go('/dashboard/subjects/edit-subject/${subject.id}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+
                       IconButton(onPressed: () async {
                         await _deleteSubject(subject.id, token);
                       }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),

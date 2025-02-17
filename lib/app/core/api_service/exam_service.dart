@@ -1,47 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/exam/exam.dart';
-import '../../models/exam/get_exams.dart';
 import '../api_config/api_config.dart';
 import 'package:logger/logger.dart';
+import '../../models/exam/get_exam.dart';
 
 class ExamService {
   var logger = Logger();
-  // Fetch all exams
-  Future<List<GetExams>> fetchExams(String token) async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/exam/all'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token', 
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      logger.d("Exams: $jsonResponse");
-      if (jsonResponse['success'] == true) {
-        try {
-          List<GetExams> exams = (jsonResponse['exams'] as List)
-              .map((examJson) => GetExams.fromJson(examJson))
-              .toList();
-          logger.i('Exams fetched successfully');
-          return exams;
-        } catch (e) {
-          logger.e('Error parsing exams: $e');
-          throw Exception('Error parsing exams: $e');
-        }
-      } else {
-        logger.e('Failed to load exams');
-        throw Exception('Failed to load exams');
-      }
-    } else {
-      throw Exception('Failed to load exams');
-    }
-  }
-
   // Create a new exam
-  Future<Exam> createExam(Exam exam, String token) async {
+  Future<void> createExam(Exam exam, String token) async {
+    logger.d('Creating exam with data: ${exam.toJson()}');
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/exam/create'),
       headers: {
@@ -52,8 +20,15 @@ class ExamService {
     );
 
     if (response.statusCode == 201) {
-      logger.d("Exam created successfully: ${response.body}");
-      return Exam.fromJson(json.decode(response.body));
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      logger.d("Exam creation response: ${response.body}");
+      
+      if (jsonResponse['success'] == true) {
+          return;
+      } else {
+        logger.e("Failed to create exam: ${jsonResponse['message']}");
+        throw Exception(jsonResponse['message'] ?? 'Failed to create exam');
+      }
     } else {
       logger.e("Failed to create exam: ${response.body}");
       throw Exception('Failed to create exam');
@@ -93,6 +68,33 @@ class ExamService {
     } else {
       logger.e('Failed to delete exam');
       throw Exception('Failed to delete exam');
+    }
+  }
+
+  // Fetch all exams
+  Future<List<GetExam>> getAllExams(String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/exam/all'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      logger.d("Exams fetch response: ${response.body}");
+      
+      if (jsonResponse['success'] == true) {
+        final List<dynamic> examsList = jsonResponse['exams'];
+        return examsList.map((json) => GetExam.fromJson(json)).toList();
+      } else {
+        logger.e("Failed to fetch exams: ${jsonResponse['message']}");
+        throw Exception(jsonResponse['message'] ?? 'Failed to fetch exams');
+      }
+    } else {
+      logger.e("Failed to fetch exams: ${response.body}");
+      throw Exception('Failed to fetch exams');
     }
   }
 }

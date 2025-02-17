@@ -196,7 +196,6 @@ class StudyMaterialService {
     request.fields['subject'] = subjectId;
     request.fields['teacher'] = teacherId;
 
-
     var response = await request.send();
     var responseBody = await http.Response.fromStream(response);
     

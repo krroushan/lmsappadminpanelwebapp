@@ -7,13 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:go_router/go_router.dart';
+import 'package:responsive_grid/responsive_grid.dart';
 
 // 🌎 Project imports:
 import '../../../../generated/l10n.dart' as l;
 import '../../core/theme/_app_colors.dart';
+import '../../models/exam/get_exam.dart';
+import '../../widgets/card_widgets/_exam_card.dart';
 import '../../widgets/widgets.dart';
 import '../../core/api_service/exam_service.dart';
-import '../../models/exam/get_exams.dart';
+import '../../models/exam/exam.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -25,7 +28,7 @@ class ExamListView extends StatefulWidget {
 }
 
 class _ExamListViewState extends State<ExamListView> {
-  List<GetExams> _exams = [];
+  List<GetExam> _exams = [];
   int _totalExams = 0;
 
   bool _isLoading = true;
@@ -95,27 +98,25 @@ class _ExamListViewState extends State<ExamListView> {
     }
   }
 
-  // New method to fetch Class data from the API
+  // Updated fetch method to use getAllExams
   Future<void> _fetchExams() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      List<GetExams> response = await _examService.fetchExams(token); // Fetch the response
-      print("response: ${response[0].title}");
+      List<GetExam> response = await _examService.getAllExams(token);
       setState(() {
-          _exams = response;
+        _exams = response;
         _totalExams = response.length;
         _isLoading = false;
       });
-      
-        print("exam: ${_exams.length}");
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      print(e);
-      throw Exception('Failed to load exams');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load exams: $e')),
+      );
     }
   }
 
@@ -128,6 +129,7 @@ class _ExamListViewState extends State<ExamListView> {
 
   @override
   Widget build(BuildContext context) {
+    final _theme = Theme.of(context);
     final _sizeInfo = rf.ResponsiveValue<_SizeInfo>(
       context,
       conditionalValues: [
@@ -162,103 +164,82 @@ class _ExamListViewState extends State<ExamListView> {
       defaultValue: const _SizeInfo(),
     ).value;
 
-    TextTheme textTheme = Theme.of(context).textTheme;
-    final theme = Theme.of(context);
-
     return Scaffold(
-      body: Padding(
-        padding: _sizeInfo.padding,
-        child: ShadowContainer(
-          showHeader: false,
-          contentPadding: EdgeInsets.zero,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final isMobile = constraints.maxWidth < 481;
-                final isTablet =
-                    constraints.maxWidth < 992 && constraints.maxWidth >= 481;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    isMobile
-                        ? Padding(
-                            padding: _sizeInfo.padding,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Spacer(),
-                                    addUserButton(textTheme),
-                                  ],
-                                ),
-                                const SizedBox(height: 16.0),
-                                searchFormField(textTheme: textTheme),
-                              ],
-                            ),
-                          )
-                        : Padding(
-                            padding: _sizeInfo.padding,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 1,
-                                  child: searchFormField(textTheme: textTheme),
-                                ),
-                                Spacer(flex: isTablet || isMobile ? 1 : 2),
-                                addUserButton(textTheme),
-                              ],
-                            ),
-                          ),
-
-                    // Data Table
-                    isMobile || isTablet
-                        ? RawScrollbar(
-                            padding: const EdgeInsets.only(left: 18),
-                            trackBorderColor: theme.colorScheme.surface,
-                            trackVisibility: true,
-                            scrollbarOrientation: ScrollbarOrientation.bottom,
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            thickness: 8.0,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: userListDataTable(context),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
-                              ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
-                            ),
-                          ),
-
-                  ],
-                );
-              },
+      body: ListView(
+        shrinkWrap: true,
+        addAutomaticKeepAlives: false,
+        padding: _sizeInfo.padding / 2.5,
+        children: [
+          // Header with Title and Add Button
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              (_sizeInfo.padding.horizontal / 2) / 2.5,
+              16,
+              (_sizeInfo.padding.horizontal / 2) / 2.5,
+              0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Exams',
+                  style: _theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                addUserButton(_theme.textTheme),
+              ],
             ),
           ),
-        ),
+
+          // Search Field
+          Padding(
+            padding: _sizeInfo.padding / 2.5,
+            child: searchFormField(textTheme: _theme.textTheme),
+          ),
+
+          // Exam Cards Grid
+          ResponsiveGridRow(
+            children: _isLoading 
+              ? <ResponsiveGridCol>[
+                  ResponsiveGridCol(
+                    lg: 12,
+                    md: 12,
+                    sm: 12,
+                    xs: 12,
+                    child: Container(
+                      height: 200,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: _theme.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ]
+              : _exams.asMap().entries.map(
+                  (entry) => ResponsiveGridCol(
+                    lg: 3,
+                    md: 4,
+                    sm: 12,
+                    xs: 12,
+                    child: Padding(
+                      padding: _sizeInfo.padding / 2.5,
+                      child: ExamCard(
+                        exam: entry.value,
+                        onDelete: _deleteExam,
+                        onEdit: (exam) {
+                          context.go('/dashboard/exams/edit-exam', extra: exam);
+                        },
+                        onView: (examId) {
+                          context.go('/dashboard/exams/exam-profile', extra: examId);
+                        },
+                      ),
+                    ),
+                  ),
+                ).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -269,13 +250,10 @@ class _ExamListViewState extends State<ExamListView> {
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       ),
       onPressed: () {
-        setState(() {
-          //_showFormDialog(context);
-          context.go('/dashboard/teachers/add-teacher');
-        });
+        context.go('/dashboard/exams/add-exam');
       },
       label: Text(
-        'Add New Teacher',
+        'Add New Exam',
         style: textTheme.bodySmall?.copyWith(
           color: AcnooAppColors.kWhiteColor,
           fontWeight: FontWeight.bold,
@@ -312,67 +290,6 @@ class _ExamListViewState extends State<ExamListView> {
       onChanged: (value) {
         _setSearchQuery(value);
       },
-    );
-  }
-
-  // User List Data Table
-  Theme userListDataTable(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    return Theme(
-      data: ThemeData(
-          dividerColor: theme.colorScheme.outline,
-          dividerTheme: DividerThemeData(
-            color: theme.colorScheme.outline,
-          )),
-      child: DataTable(
-        checkboxHorizontalMargin: 16,
-        dataRowMaxHeight: 70,
-        headingTextStyle: textTheme.titleMedium,
-        dataTextStyle: textTheme.bodySmall,
-        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-        showBottomBorder: true,
-        columns: const [
-          DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Title')),
-          DataColumn(label: Text('Subject')),
-          DataColumn(label: Text('Class')),
-          DataColumn(label: Text('Number of Questions')),
-          DataColumn(label: Text('Duration')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: _exams.asMap().entries.map(
-          (entry) {
-            final index = entry.key + 1;
-            final examInfo = entry.value;
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(examInfo.title)),
-                DataCell(Text(examInfo.subject.name)),
-                DataCell(Text(examInfo.classInfo.name)),
-                DataCell(Text(examInfo.numberOfQuestions.toString())),
-                DataCell(Text(examInfo.duration.toString())),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/exams/exam-profile', extra: examInfo.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/exams/edit-exam');
-                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-                      IconButton(onPressed: () async {
-                        await _deleteExam(examInfo.id);
-                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ).toList(),
-      ),
     );
   }
 }

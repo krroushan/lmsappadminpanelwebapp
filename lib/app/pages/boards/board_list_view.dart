@@ -357,7 +357,7 @@ class _BoardListViewState extends State<BoardListView> {
                 DataCell(
                   ClipOval(
                     child: Image.network(
-                      'https://bbose.online/wp-content/uploads/2024/12/${boardInfo.boardImage}', 
+                      'https://apkobi.com/uploads/boards/bseb.png', 
                       width: 50, 
                       height: 50, 
                       fit: BoxFit.cover,
@@ -368,11 +368,11 @@ class _BoardListViewState extends State<BoardListView> {
                 DataCell(
                   Row(
                     children: [
+                      // IconButton(onPressed: () {
+                      //   context.go('/dashboard/boards/board-profile', extra: boardInfo.id);
+                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
                       IconButton(onPressed: () {
-                        context.go('/dashboard/boards/board-profile', extra: boardInfo.id);
-                      }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/boards/edit-board');
+                        context.go('/dashboard/boards/edit-board/${boardInfo.id}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
                       IconButton(onPressed: () async {
                           await _deleteBoard(boardInfo.id, token);

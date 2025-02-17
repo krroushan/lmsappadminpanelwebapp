@@ -12,7 +12,6 @@ import 'package:responsive_grid/responsive_grid.dart';
 import '../../widgets/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/api_service/subject_service.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_service/class_service.dart';
@@ -20,13 +19,22 @@ import '../../models/classes/class_info.dart';
 import '../../core/helpers/field_styles/field_styles.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:logger/logger.dart';
+import '../../models/subject/subject.dart';
+import '../../models/teacher/teacher.dart';
+import '../../models/board/board.dart';
+import '../../core/api_service/subject_service.dart';
+import '../../core/api_service/teacher_service.dart';
+import '../../core/api_service/syllabus_service.dart';
+import '../../core/api_service/board_service.dart';
 
 class EditSyllabusView extends StatefulWidget {
   final String syllabusId;
   const EditSyllabusView({super.key, required this.syllabusId});
 
+
   @override
   State<EditSyllabusView> createState() => _EditSyllabusViewState();
+
 }
 
 class _EditSyllabusViewState extends State<EditSyllabusView> {
@@ -37,26 +45,30 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
 
   bool _isLoading = false;
 
-  PlatformFile? selectedImage;
-  String? selectedImagePath;
-  Uint8List? selectedImageBytes;
+  PlatformFile? selectedFile;
+  String? selectedFilePath;
+  Uint8List? selectedFileBytes;
   String? mimeType;
-  int? imageSize;
+  int? fileSize;
 
   final customFormKey = GlobalKey<FormState>();
   bool isCustomFormChecked = false;
   String token = '';
 
   String _classId = "";
+  String _subjectId = "";
+  String _teacherId = "";
+  String _boardId = "";
 
-  // Declare TextEditingControllers
-  final TextEditingController subjectNameController = TextEditingController();
-  final TextEditingController subjectDescriptionController = TextEditingController();
-  final TextEditingController subjectImageController = TextEditingController();
+   // Declare TextEditingControllers
+  final TextEditingController titleController = TextEditingController();
 
-  Future<void> _pickImage() async {
+  final _syllabusService = SyllabusService();
+
+  Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
     );
 
     if (result == null) {
@@ -64,61 +76,28 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
     }
 
     setState(() {
-      selectedImage = result.files.first;
-      mimeType = selectedImage!.extension != null
-          ? 'image/${selectedImage!.extension}'
+      selectedFile = result.files.first;
+      mimeType = selectedFile!.extension != null
+          ? 'pdf/${selectedFile!.extension}'
           : 'unknown';
-      imageSize = selectedImage!.size;
+      fileSize = selectedFile!.size;
     });
-    print("selectedImage: ${selectedImage!.name}");
+    print("selectedFile: ${selectedFile!.bytes}");
   }
 
-// Create Class method
-  Future<void> _createSubject(
-      String subjectName, String subjectDescription, String classId) async {
-    logger.d('subjectName: $subjectName');
-    logger.d('subjectDescription: $subjectDescription');
-    logger.d('classId: $classId');
-    setState(() => _isLoading = true);
-    try {
-      // Create an instance of the ClassService
-      final subjectService = SubjectService();
+  // fetch existing syllabus data
+  Future<void> _fetchExistingSyllabus() async {
+    final syllabus = await _syllabusService.fetchSyllabusById(widget.syllabusId, token);
+    setState(() {
+      titleController.text = syllabus.title;
+      _classId = syllabus.classInfo?.id ?? '';
+      _subjectId = syllabus.subject?.id ?? '';
+      _teacherId = syllabus.teacher?.id ?? '';
+      _boardId = syllabus.board?.id ?? '';
 
-      // Prepare the image data for upload
-      Uint8List? imageBytes = selectedImage?.bytes;
-
-      final response = await subjectService.createSubject(subjectName,
-          subjectDescription, imageBytes!, selectedImage!.name, token, classId);
-      logger.d('response: ${response.message}');
-      // Check if the response is successful
-      if (response.success) {
-        // Handle the successful response (e.g., show a success message)
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Subject created successfully',
-                  style: TextStyle(color: Colors.green))),
-        );
-        context.go('/dashboard/subjects/all-subjects');
-      } else {
-        // Handle the case where the response is null or not successful
-        print(
-            'Failed to create subject1: ${response.message}'); // Log the error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(response.message,
-                  style: const TextStyle(color: Colors.red))),
-        );
-      }
-    } catch (e) {
-      // Catch any errors and display a message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error1: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    });
   }
+
 
   @override
   void initState() {
@@ -126,14 +105,32 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
+    // Set teacher ID if user is a teacher
+    if (authProvider.getRole == 'teacher') {
+      _teacherId = authProvider.getUserId;
+    }
     _fetchClassList();
+    _fetchSubjectList();
+    _fetchBoardList();
+    _fetchExistingSyllabus();
+    // Only fetch teacher list if user is not a teacher
+    if (authProvider.getRole != 'teacher') {
+      _fetchTeacherList();
+    }
+
   }
 
 // class service
   final _classService = ClassService();
+  final _subjectService = SubjectService();
+  final _teacherService = TeacherService();
+  final _boardService = BoardService();
 
 // class list
   List<ClassInfo> _classList = [];
+  List<Subject> _subjectList = [];
+  List<Teacher> _teacherList = [];
+  List<Board> _boardList = [];
 
   // fetch class list
   Future<void> _fetchClassList() async {
@@ -143,10 +140,34 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
     });
   }
 
+  // fetch subject list
+  Future<void> _fetchSubjectList() async {
+    final subjectList = await _subjectService.fetchAllSubjects(token);
+    setState(() {
+      _subjectList = subjectList;
+    });
+  }
+
+  // fetch teacher list if user is not a teacher
+  Future<void> _fetchTeacherList() async {
+    final teacherList = await _teacherService.fetchAllTeachers(token);
+    setState(() {
+      _teacherList = teacherList;
+    });
+  }
+
+  // fetch board list
+  Future<void> _fetchBoardList() async {
+    final boardList = await _boardService.fetchAllBoards(token);
+    setState(() {
+      _boardList = boardList;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    const _lg = 4;
-    const _md = 6;
+    const _lg = 12;
+    const _md = 12;
     final _dropdownStyle = AcnooDropdownStyle(context);
 
     final _sizeInfo = rf.ResponsiveValue<_SizeInfo>(
@@ -165,6 +186,9 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
       defaultValue: const _SizeInfo(),
     ).value;
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isTeacher = authProvider.getRole == 'teacher';
+
     return Scaffold(
       body: ListView(
         padding: _sizeInfo.padding,
@@ -172,25 +196,25 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
           Form(
             key: browserDefaultFormKey,
             child: ShadowContainer(
-              headerText: 'Add Subject',
+              headerText: 'Add Syllabus',
               child: ResponsiveGridRow(
                 children: [
-                  // Subject Name
+                  // Lecture Title
                   ResponsiveGridCol(
                     lg: _lg,
                     md: _md,
                     child: Padding(
                       padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Subject Name',
+                        labelText: 'Syllabus Title',
                         inputField: TextFormField(
-                          controller: subjectNameController,
+                          controller: titleController,
                           decoration: const InputDecoration(
-                            hintText: 'Enter subject name',
+                            hintText: 'Enter syllabus title',
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter subject name';
+                              return 'Please enter syllabus title';
                             }
                             return null;
                           },
@@ -200,10 +224,43 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                     ),
                   ),
 
-                  // Class
+                  // Board
                   ResponsiveGridCol(
-                    lg: _lg,
-                    md: _md,
+                    lg: 4,
+                    md: 6,
+                    child: Padding(
+                      padding:
+                          EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                      child: TextFieldLabelWrapper(
+                        labelText: 'Board',
+                        inputField: DropdownButtonFormField2(
+                          menuItemStyleData: _dropdownStyle.menuItemStyle,
+                          buttonStyleData: _dropdownStyle.buttonStyle,
+                          iconStyleData: _dropdownStyle.iconStyle,
+                          dropdownStyleData: _dropdownStyle.dropdownStyle,
+                          hint: const Text('Select Board'),
+                          value: _boardId.isNotEmpty ? _boardId : null,
+                          items: _boardList
+                              .map((board) => DropdownMenuItem(
+                                    value: board.id,
+                                    child: Text(board.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _boardId = value as String;
+                              logger.d('board: $_boardId');
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Classes
+                  ResponsiveGridCol(
+                    lg: 4,
+                    md: 6,
                     child: Padding(
                       padding:
                           EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
@@ -215,11 +272,13 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
                           hint: const Text('Select Class'),
+                          value: _classId.isNotEmpty ? _classId : null,
                           items: _classList
                               .map((classInfo) => DropdownMenuItem(
                                     value: classInfo.id,
                                     child: Text(classInfo.name),
                                   ))
+
                               .toList(),
                           onChanged: (value) {
                             setState(() {
@@ -231,78 +290,100 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                     ),
                   ),
 
-                  // Subject Description
+                   // Subjects
                   ResponsiveGridCol(
-                    lg: _lg,
-                    md: _md,
+                    lg: 4,
+                    md: 6,
                     child: Padding(
-                      padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
+                      padding:
+                          EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Subject Description',
-                        inputField: TextFormField(
-                          controller: subjectDescriptionController,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter subject description',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter subject description';
-                            }
-                            return null;
+                        labelText: 'Subject',
+                        inputField: DropdownButtonFormField2(
+                          menuItemStyleData: _dropdownStyle.menuItemStyle,
+                          buttonStyleData: _dropdownStyle.buttonStyle,
+                          iconStyleData: _dropdownStyle.iconStyle,
+                          dropdownStyleData: _dropdownStyle.dropdownStyle,
+                          hint: const Text('Select Subject'),
+                          value: _subjectId.isNotEmpty ? _subjectId : null,
+                          items: _subjectList
+                              .map((subject) => DropdownMenuItem(
+                                    value: subject.id,
+                                    child: Text(subject.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _subjectId = value as String;
+                            });
                           },
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
                         ),
                       ),
                     ),
                   ),
 
-                  // Subject Image
+                   // Teachers
+                  if (!isTeacher) ResponsiveGridCol(
+                    lg: 4,
+                    md: 6,
+                    child: Padding(
+                      padding:
+                          EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                      child: TextFieldLabelWrapper(
+                        labelText: 'Teacher',
+                        inputField: DropdownButtonFormField2(
+                          menuItemStyleData: _dropdownStyle.menuItemStyle,
+                          buttonStyleData: _dropdownStyle.buttonStyle,
+                          iconStyleData: _dropdownStyle.iconStyle,
+                          dropdownStyleData: _dropdownStyle.dropdownStyle,
+                          hint: const Text('Select Teacher'),
+                          value: _teacherId.isNotEmpty ? _teacherId : null,
+                          items: _teacherList
+                              .map((teacher) => DropdownMenuItem(
+                                    value: teacher.id,
+                                    child: Text(teacher.fullName),
+                                  ))
+
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _teacherId = value as String;
+                              logger.d('teacher: $_teacherId');
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Syllabus File
                   ResponsiveGridCol(
-                    lg: _lg,
-                    md: _md,
+                    lg: 4,
+                    md: 6,
                     child: Padding(
                       padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
                       child: TextFieldLabelWrapper(
-                        labelText: 'Subject Image',
+                        labelText: 'Syllabus File',
                         inputField: Column(
                           children: [
                             ElevatedButton.icon(
                               onPressed: () async {
-                                await _pickImage();
+                                await _pickFile();
                               },
                               icon:
                                   const Icon(Icons.upload_file), // Upload icon
-                              label: const Text('Upload Image'),
+                              label: const Text('Upload Syllabus File'),
                             ),
                             // Display the selected image here
-                            if (selectedImage !=
+                            if (selectedFile !=
                                 null) // Check if an image is selected
                               Column(
                                 children: [
-                                  Image.memory(
-                                    Uint8List.fromList(selectedImage!
-                                        .bytes!), // Display the selected image
-                                    width: 100, // Adjust the image fit
-                                    height: 100, // Adjust the image fit
-                                  ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Image Name: ${selectedImage!.name}', // Display the name of the selected image
+                                    'Selected File: ${selectedFile!.name}', // Display the name of the selected image
                                     style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
-                                  ),
-                                  Text(
-                                    'MIME Type: $mimeType', // Display the bytes as a base64 string
-                                    style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
-                                  ),
-                                  Text(
-                                    'Image Size: $imageSize bytes', // Display the bytes as a base64 string
-                                    style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
+                                        fontSize: 16, color: Colors.blue), // Set the desired text style
                                   ),
                                 ],
                               ),
@@ -326,25 +407,22 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                           if (browserDefaultFormKey.currentState?.validate() ==
                               true) {
                             browserDefaultFormKey.currentState?.save();
-                            final subjectName = subjectNameController
-                                .text; // Get the class name
-                            final subjectDescription =
-                                subjectDescriptionController
-                                    .text; // Get the class description
-                            final subjectImage = subjectImageController
-                                .text; // Get the class image
+                            final title = titleController.text; // Get the class name
+                            // Debugging: Log the values
+  
 
-                            // Call the method to create a student
-                            _createSubject(
-                                subjectName, subjectDescription, _classId);
+          //_updateSyllabus(title);
+
+                            
                           }
                         },
                         child: _isLoading
                             ? const CircularProgressIndicator()
-                            : const Text('Save Subject'),
+                            : const Text('Update Syllabus'),
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),
@@ -358,9 +436,7 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
   @override
   void dispose() {
     // Dispose of the controllers when the widget is removed from the widget tree
-    subjectNameController.dispose();
-    subjectDescriptionController.dispose();
-    subjectImageController.dispose();
+    titleController.dispose();
     super.dispose();
   }
 }

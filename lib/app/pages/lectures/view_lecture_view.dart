@@ -15,6 +15,7 @@ import 'package:logger/logger.dart';
 import '../../models/classes/class_info.dart';
 import '../../models/subject/subject.dart';
 import '../../models/teacher/teacher.dart';
+import '../../models/board/board.dart';
 
 final logger = Logger();
 
@@ -39,6 +40,7 @@ class _ViewLectureViewState extends State<ViewLectureView> {
     teacher: Teacher(id: '', username: '', fullName: '', role: '', password: '', createdAt: DateTime.now(), updatedAt: DateTime.now(), email: ''),
     classInfo: ClassInfo(id: '', name: '', description: '', classImage: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
     subject: Subject(id: '', name: '', description: '', subjectImage: '', classId: ''),
+    board: Board(id: '', name: '', description: '', boardImage: '', createdAt: DateTime.now(), updatedAt: DateTime.now()),
     lectureType: '',
     streamId: '',
     thumbnail: '',

@@ -1,3 +1,5 @@
+import '../../../app/models/board/board.dart';
+
 import '../../../app/models/classes/class_info.dart';
 import '../../../app/models/subject/subject.dart';
 import '../../../app/models/teacher/teacher.dart';
@@ -10,7 +12,8 @@ class Lecture {
   final String startTime;
   final Teacher? teacher;
   final ClassInfo? classInfo; 
-  final Subject? subject; 
+  final Subject? subject;
+  final Board? board; 
   final String? recordingUrl;
   final String lectureType;
   final String thumbnail;
@@ -27,6 +30,7 @@ class Lecture {
     required this.teacher,
     required this.classInfo,
     required this.subject,
+    required this.board,
     this.recordingUrl,
     required this.lectureType,
     required this.thumbnail,
@@ -45,6 +49,7 @@ class Lecture {
     teacher: Teacher.fromJson(json['teacher']), // Parses the nested teacher object
     classInfo: ClassInfo.fromJson(json['class']), // Parses the nested class object
     subject: Subject.fromJson(json['subject']), // Parses the nested subject object
+    board: Board.fromJson(json['board']), // Parses the nested board object
     recordingUrl: json['recordingUrl'] ?? "", // This can be null
     lectureType: json['lectureType'] ?? "",
     thumbnail: json['thumbnail'] ?? "",
@@ -64,6 +69,7 @@ class Lecture {
       'teacher': teacher?.toJson(),
       'class': classInfo?.toJson(),
       'subject': subject?.toJson(),
+      'board': board?.toJson(),
       'recordingUrl': recordingUrl ?? "",
       'lectureType': lectureType,
       'thumbnail': thumbnail,

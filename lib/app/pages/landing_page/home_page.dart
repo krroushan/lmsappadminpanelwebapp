@@ -8,7 +8,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ramaanya Foundation'),
+        title: Text('Knowledgewap'),
         centerTitle: true, // Center the title
       ),
       body: SingleChildScrollView( // Allow scrolling for content
@@ -110,9 +110,9 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('What is Ramaanya Foundation?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text('What is Knowledgewap?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
-                  Text('Ramaanya Foundation is dedicated to providing quality education to underprivileged children.'),
+                  Text('Knowledgewap is dedicated to providing quality education to underprivileged children.'),
                 ],
               ),
             ),
@@ -156,7 +156,7 @@ class HomePage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            '© 2023 Ramaanya Foundation. All rights reserved.',
+            '© 2023 Knowledgewap. All rights reserved.',
             textAlign: TextAlign.center,
           ),
         ),

@@ -71,7 +71,7 @@ class CompanyHeaderWidget extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(start: 10),
                     child: Image.network(
-                      'https://www.ramaanyafoundation.org/images/logo.png', 
+                      'https://knowledgewap.com/wp-content/uploads/2024/03/cropped-knowledgewap-logo-new-gp.png', 
                       fit: BoxFit.fitHeight, 
                       alignment: Alignment.bottomCenter,
                       ),
