@@ -94,50 +94,36 @@ class _ViewStudentViewState extends State<ViewStudentView> {
       lg: 24 / 2,
     );
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(_padding),
-        child: ResponsiveGridRow(
-          children: [
-            ResponsiveGridCol(
-              lg: 12,
-              child: Padding(
-                padding: EdgeInsets.all(_padding),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ShadowContainer(
-                      contentPadding: EdgeInsets.zero,
-                      showHeader: false,
-                      child: StudentProfileDetailsWidget(
-                          padding: _padding,
-                          theme: theme,
-                          textTheme: textTheme,
-                          student: student),
-                    ),
-
-                    /// -------------image
-  //                   Positioned(
-  //                     top: 10,
-  //                     child: Container(
-  //                       height: 300,
-  //                       width: 700,
-  //                       decoration: const BoxDecoration(
-  //                         shape: BoxShape.rectangle,
-  //                       ),
-  //                       clipBehavior: Clip.antiAlias,
-  //                       child: Image.network(
-  // 'https://apnahomeopathy.com/wp-content/uploads/2024/10/homeopathic-doctors-at-apnahomeopathy-clinic.webp',
-  // fit: BoxFit.cover,
-  //                       ),
-  //                     ),
-  //                   ),
-                  ],
-                ),
-              ),
+      //backgroundColor: theme.colorScheme.surface.withOpacity(0.95),
+      body: _isLoading 
+        ? Center(
+            child: CircularProgressIndicator(
+              color: theme.colorScheme.primary,
             ),
-          ],
-        ),
-      ),
+          )
+        : SingleChildScrollView(
+            padding: EdgeInsets.all(_padding),
+            child: ResponsiveGridRow(
+              children: [
+                ResponsiveGridCol(
+                  lg: 12,
+                  child: Padding(
+                    padding: EdgeInsets.all(_padding),
+                    child: ShadowContainer(
+                      contentPadding: EdgeInsets.zero,
+                      headerText: 'Student Information',
+                      child: StudentProfileDetailsWidget(
+                        padding: _padding,
+                        theme: theme,
+                        textTheme: textTheme,
+                        student: student,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
     );
   }
 }

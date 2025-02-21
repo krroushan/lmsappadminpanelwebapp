@@ -1,5 +1,5 @@
 import '../../../app/models/classes/class_info.dart';
-import '../../../app/models/subject/subject.dart';
+import '../../../app/models/subject/subjector.dart';
 import '../../../app/models/teacher/teacher.dart';
 import '../../../app/models/board/board.dart';
 

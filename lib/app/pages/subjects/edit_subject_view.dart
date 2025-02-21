@@ -1,5 +1,6 @@
 // 🐦 Flutter imports:
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart'; // Import this for kIsWeb
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
 
 // 🌎 Project imports:
+import '../../core/api_config/api_config.dart';
 import '../../widgets/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +53,7 @@ class _EditSubjectViewState extends State<EditSubjectView> {
   String token = '';
 
   String _classId = "";
+  String subjectImageUrl = '';
 
   final _subjectService = SubjectService();
 
@@ -58,6 +61,9 @@ class _EditSubjectViewState extends State<EditSubjectView> {
   final TextEditingController subjectNameController = TextEditingController();
   final TextEditingController subjectDescriptionController = TextEditingController();
   final TextEditingController subjectImageController = TextEditingController();
+
+  // Add new state variable for upload progress
+  double _uploadProgress = 0;
 
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -69,28 +75,64 @@ class _EditSubjectViewState extends State<EditSubjectView> {
     }
 
     setState(() {
-      selectedImage = result.files.first;
-      mimeType = selectedImage!.extension != null
-          ? 'image/${selectedImage!.extension}'
-          : 'unknown';
-      imageSize = selectedImage!.size;
+      _isLoading = true;
+      _uploadProgress = 0; // Reset progress when starting new upload
     });
-    print("selectedImage: ${selectedImage!.name}");
+
+    try {
+      // Upload image immediately after selection
+      String imageUrl = await _subjectService.uploadSubjectImage(
+        result.files.first.bytes!,
+        result.files.first.name,
+        subjectNameController.text,
+        subjectImageController.text,
+        onProgress: (progress) {
+          setState(() {
+            _uploadProgress = progress;
+          });
+        },
+      );
+      
+      // Update the controller with new image URL
+      subjectImageController.text = imageUrl;
+      
+      setState(() {
+        selectedImage = result.files.first;
+        mimeType = selectedImage!.extension != null
+            ? 'image/${selectedImage!.extension}'
+            : 'unknown';
+        imageSize = selectedImage!.size;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _uploadProgress = 0; // Reset progress when done
+      });
+    }
   }
 
 // fetch existing subject data
 Future<void> _fetchExistingSubject() async {
+  // Wait for class list to be loaded first
+  await _fetchClassList();
+  
   final subject = await _subjectService.fetchSubjectById(widget.subjectId, token);
-  setState(() {
-    subjectNameController.text = subject.name;
-    _classId = subject.classId;
-    subjectDescriptionController.text = subject.description;
-    subjectImageController.text = subject.subjectImage;
-  });
+  if (mounted) {
+    setState(() {
+      subjectNameController.text = subject.name;
+      _classId = subject.classInfo?.id ?? '';
+      subjectDescriptionController.text = subject.description;
+      subjectImageUrl = subject.subjectImage;
+      subjectImageController.text = subject.subjectImage;
+    });
+  }
 }
-
-
-
 
   @override
   void initState() {
@@ -114,7 +156,45 @@ Future<void> _fetchExistingSubject() async {
     final classList = await _classService.fetchAllClasses(token);
     setState(() {
       _classList = classList;
+
     });
+  }
+
+  Future<void> _updateSubject() async {
+    setState(() {
+      _isLoading = true;  
+    });
+
+    try {
+      // No need to upload image here since it's already uploaded
+      final success = await _subjectService.updateSubject(
+        widget.subjectId,
+        subjectNameController.text,
+        subjectDescriptionController.text,
+        _classId,
+        subjectImageController.text, // Use the stored image URL
+        token,
+      );
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Subject updated successfully')),
+          );
+          context.pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating subject: $e')),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -146,7 +226,7 @@ Future<void> _fetchExistingSubject() async {
           Form(
             key: browserDefaultFormKey,
             child: ShadowContainer(
-              headerText: 'Add Subject',
+              headerText: 'Edit Subject',
               child: ResponsiveGridRow(
                 children: [
                   // Subject Name
@@ -174,10 +254,10 @@ Future<void> _fetchExistingSubject() async {
                     ),
                   ),
 
-                  // Class
+                  // Classes
                   ResponsiveGridCol(
-                    lg: _lg,
-                    md: _md,
+                    lg: 4,
+                    md: 6,
                     child: Padding(
                       padding:
                           EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
@@ -189,11 +269,13 @@ Future<void> _fetchExistingSubject() async {
                           iconStyleData: _dropdownStyle.iconStyle,
                           dropdownStyleData: _dropdownStyle.dropdownStyle,
                           hint: const Text('Select Class'),
+                          value: _classId.isNotEmpty ? _classId : null,
                           items: _classList
                               .map((classInfo) => DropdownMenuItem(
                                     value: classInfo.id,
                                     child: Text(classInfo.name),
                                   ))
+
                               .toList(),
                           onChanged: (value) {
                             setState(() {
@@ -241,45 +323,43 @@ Future<void> _fetchExistingSubject() async {
                         inputField: Column(
                           children: [
                             ElevatedButton.icon(
-                              onPressed: () async {
+                              onPressed: _isLoading ? null : () async {
                                 await _pickImage();
                               },
-                              icon:
-                                  const Icon(Icons.upload_file), // Upload icon
+                              icon: const Icon(Icons.upload_file),
                               label: const Text('Upload Image'),
                             ),
-                            // Display the selected image here
-                            if (selectedImage !=
-                                null) // Check if an image is selected
-                              Column(
-                                children: [
-                                  Image.memory(
-                                    Uint8List.fromList(selectedImage!
-                                        .bytes!), // Display the selected image
-                                    width: 100, // Adjust the image fit
-                                    height: 100, // Adjust the image fit
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Image Name: ${selectedImage!.name}', // Display the name of the selected image
-                                    style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
-                                  ),
-                                  Text(
-                                    'MIME Type: $mimeType', // Display the bytes as a base64 string
-                                    style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
-                                  ),
-                                  Text(
-                                    'Image Size: $imageSize bytes', // Display the bytes as a base64 string
-                                    style: const TextStyle(
-                                        fontSize:
-                                            16), // Set the desired text style
-                                  ),
-                                ],
+                            if (_isLoading) ...[
+                              const SizedBox(height: 8),
+                              LinearProgressIndicator(value: _uploadProgress),
+                              Text('${(_uploadProgress * 100).toStringAsFixed(0)}%'),
+                            ],
+                            const SizedBox(height: 16),
+                            // Display either the selected image or the existing image
+                            if (selectedImage != null) ...[
+                              Image.memory(
+                                selectedImage!.bytes!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
                               ),
+                              const SizedBox(height: 8),
+                              Text('Image Name: ${selectedImage!.name}'),
+                              Text('MIME Type: $mimeType'),
+                              Text('Image Size: $imageSize bytes'),
+                            ] else if (subjectImageController.text.isNotEmpty) ...[
+                              Image.network(
+                                '${ApiConfig.subjectImageUrl}$subjectImageUrl',
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Text('Error loading image');
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              Text('Current Image URL: $subjectImageUrl'),
+                            ],
                           ],
                         ),
                       ),
@@ -299,24 +379,12 @@ Future<void> _fetchExistingSubject() async {
                         onPressed: () {
                           if (browserDefaultFormKey.currentState?.validate() ==
                               true) {
-                            browserDefaultFormKey.currentState?.save();
-                            final subjectName = subjectNameController
-                                .text; // Get the class name
-                            final subjectDescription =
-                                subjectDescriptionController
-                                    .text; // Get the class description
-                            final subjectImage = subjectImageController
-                                .text; // Get the class image
-
-                            // Call the method to create a student
-                            // _updateSubject(
-                            //     subjectName, subjectDescription, _classId);
-
+                            _updateSubject();
                           }
                         },
                         child: _isLoading
                             ? const CircularProgressIndicator()
-                            : const Text('Save Subject'),
+                            : const Text('Update Subject'),
                       ),
                     ),
                   ),

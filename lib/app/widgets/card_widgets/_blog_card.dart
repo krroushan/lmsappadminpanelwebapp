@@ -17,7 +17,7 @@ class BlogCardWidget extends StatefulWidget {
     this.createdDate,
     this.recordingUrl,  // Add this line
     required this.onDelete,
-    this.streamId,
+    this.streamId, required Image Function(dynamic context, dynamic error, dynamic stackTrace) errorBuilder,
   });
   final String title;
   final String? description;

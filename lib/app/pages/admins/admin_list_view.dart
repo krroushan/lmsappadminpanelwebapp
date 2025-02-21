@@ -356,7 +356,7 @@ class _AdminListViewState extends State<AdminListView> {
                           context.go('/dashboard/admins/admin-profile', extra: adminInfo.id);
                       }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
                       IconButton(onPressed: () {
-                        context.go('/dashboard/admins/edit-admin');
+                        context.go('/dashboard/admins/edit-admin/${adminInfo.id}');
                       }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
                       IconButton(onPressed: () async {
                           await _deleteAdmin(adminInfo.id);

@@ -100,4 +100,135 @@ Future<void> deleteClass(String classId, String token) async {
       throw Exception('Failed to delete class');
     }
   }
+
+  Future<ClassInfo> getClassById(String classId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/class/$classId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success']) {
+        ClassInfo classInfo = ClassInfo.fromJson(jsonResponse['classItem']);
+        logger.i('Class fetched successfully');
+        return classInfo;
+      } else {
+        logger.e('Failed to load class');
+        throw Exception('Failed to load class');
+      }
+    } else {
+      logger.e('Failed to load class: ${response.statusCode}');
+      throw Exception('Failed to load class: ${response.statusCode}');
+    }
+  }
+
+  Future<CreateClassResponse> updateClass(
+    String classId,
+    String className,
+    String classDescription,
+    Uint8List? imageBytes,
+    String? imageName,
+    String token,
+  ) async {
+    var request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('${ApiConfig.baseUrl}/class/$classId'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['name'] = className;
+    request.fields['description'] = classDescription;
+
+    // Only add image if provided
+    if (imageBytes != null && imageName != null) {
+      String mimeType;
+      if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
+        mimeType = 'image/jpeg';
+      } else if (imageName.endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (imageName.endsWith('.webp')) {
+        mimeType = 'image/webp';
+      } else {
+        return CreateClassResponse(
+          success: false,
+          message: 'Unsupported file format. Only JPG, PNG, and WEBP are allowed.',
+        );
+      }
+
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        imageBytes,
+        filename: imageName,
+        contentType: MediaType.parse(mimeType),
+      ));
+    }
+
+    var response = await request.send();
+    var responseBody = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200) {
+      logger.i('Class updated successfully');
+      return CreateClassResponse(success: true, message: 'Class updated successfully');
+    } else {
+      logger.e('Failed to update class: ${responseBody.body}');
+      return CreateClassResponse(
+        success: false,
+        message: jsonDecode(responseBody.body)['message'],
+      );
+    }
+  }
+
+  Future<String> uploadClassImage(
+    Uint8List imageBytes,
+    String imageName,
+    String title,
+    String prevClassImage,
+    String token,
+  ) async {
+    // Determine MIME type based on the file extension
+    String mimeType;
+    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (imageName.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (imageName.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    } else {
+      throw Exception('Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/class/uploadimage'),
+    );
+
+    request.fields['title'] = title;
+    request.fields['prevClassImage'] = prevClassImage;
+    request.files.add(http.MultipartFile.fromBytes(
+      'classImage',
+      imageBytes,
+      filename: imageName,
+      contentType: MediaType.parse(mimeType),
+    ));
+
+    var response = await request.send();
+    var responseBody = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+      if (jsonResponse['success']) {
+        logger.i('Image uploaded successfully');
+        return jsonResponse['classImage'];
+      } else {
+        logger.e('Failed to upload image');
+        throw Exception('Failed to upload image');
+      }
+    } else {
+      logger.e('Failed to upload image: ${responseBody.body}');
+      throw Exception('Failed to upload image: ${responseBody.body}');
+    }
+  }
 }

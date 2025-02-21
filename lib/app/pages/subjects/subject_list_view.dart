@@ -17,13 +17,14 @@ import '../../models/subject/subject.dart';
 import '../../providers/_auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import '../../core/api_config/api_config.dart';
 
 class SubjectListView extends StatefulWidget {
   const SubjectListView({super.key});
 
   @override
   State<SubjectListView> createState() => _SubjectListViewState();
-}
+} 
 
 class _SubjectListViewState extends State<SubjectListView> {
   List<Subject> _subjects = [];
@@ -357,7 +358,7 @@ class _SubjectListViewState extends State<SubjectListView> {
                 DataCell(
                   ClipOval(
                     child: Image.network(
-                      'https://bbose.online/wp-content/uploads/2024/12/${subject.subjectImage}', 
+                      '${ApiConfig.subjectImageUrl}${subject.subjectImage}', 
                       width: 50, 
                       height: 50, 
                       fit: BoxFit.cover,
@@ -375,7 +376,7 @@ class _SubjectListViewState extends State<SubjectListView> {
                       borderRadius: BorderRadius.circular(16.0),
                     ),
                     child: Text(
-                      subject.classId ?? 'No Class',
+                      subject.classInfo.name ?? 'No Class',
                       style: textTheme.bodySmall?.copyWith(
                           color: true
                               ? AcnooAppColors.kSuccess

@@ -9,6 +9,7 @@ import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
 
 // 🌎 Project imports:
+import '../../models/syllabus/syllabus_update.dart';
 import '../../widgets/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -65,24 +66,95 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
 
   final _syllabusService = SyllabusService();
 
+
+  String? prevPdfUrl = '';
+  // Add new variable to store the uploaded file URL
+  String? uploadedFileUrl;
+  double _uploadProgress = 0.0;
+
+  // Add new loading state for upload button
+  bool _isUploadLoading = false;
+
+  // Modify _pickFile to handle upload loading state
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: true,
+      );
 
-    if (result == null) {
-      return;
+      if (result == null) return;
+
+      setState(() {
+        selectedFile = result.files.first;
+        mimeType = 'application/pdf';
+        fileSize = selectedFile!.size;
+        _isUploadLoading = true;
+        _uploadProgress = 0.0;
+      });
+
+      // Debug logs
+      logger.d('File details:');
+      logger.d('Name: ${selectedFile!.name}');
+      logger.d('Size: ${selectedFile!.size} bytes');
+      logger.d('Has data: ${selectedFile!.bytes != null}');
+      
+      if (selectedFile?.bytes == null || selectedFile!.bytes!.isEmpty) {
+        throw Exception('File data is empty or null');
+      }
+
+      if (selectedFile!.size > 10 * 1024 * 1024) { // 10MB limit example
+        throw Exception('File size exceeds limit');
+      }
+
+      final response = await _syllabusService.uploadSyllabusPdf(
+        titleController.text.trim(),
+        selectedFile!.bytes!,
+        selectedFile!.name,
+        prevPdfUrl ?? '',
+        token,
+      );
+
+      logger.d('Upload response: $response');
+
+      if (response == null || response.isEmpty) {
+        throw Exception('Empty response from server');
+      }
+
+      setState(() {
+        uploadedFileUrl = response;
+        _isUploadLoading = false;
+        _uploadProgress = 1.0;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      logger.e('File upload error: $e');
+      setState(() {
+        _isUploadLoading = false;
+        _uploadProgress = 0.0;
+      });
+      
+      String errorMessage = 'Failed to upload file';
+      if (e.toString().contains('size exceeds')) {
+        errorMessage = 'File size is too large';
+      } else if (e.toString().contains('data is empty')) {
+        errorMessage = 'Invalid file data';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    setState(() {
-      selectedFile = result.files.first;
-      mimeType = selectedFile!.extension != null
-          ? 'pdf/${selectedFile!.extension}'
-          : 'unknown';
-      fileSize = selectedFile!.size;
-    });
-    print("selectedFile: ${selectedFile!.bytes}");
   }
 
   // fetch existing syllabus data
@@ -94,7 +166,7 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
       _subjectId = syllabus.subject?.id ?? '';
       _teacherId = syllabus.teacher?.id ?? '';
       _boardId = syllabus.board?.id ?? '';
-
+      prevPdfUrl = syllabus.fileUrl;
     });
   }
 
@@ -162,6 +234,43 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
     setState(() {
       _boardList = boardList;
     });
+  }
+
+  // Add update syllabus method
+  Future<void> _updateSyllabus() async {
+    if (!browserDefaultFormKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _syllabusService.updateSyllabus(
+        widget.syllabusId,
+        SyllabusUpdate(
+          title: titleController.text,
+          classId: _classId,
+          subjectId: _subjectId,
+          teacherId: _teacherId,
+          boardId: _boardId,
+          fileUrl: uploadedFileUrl ?? '',
+        ),
+        token,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Syllabus updated successfully')),
+      );
+      context.go('/dashboard/syllabus/all-syllabus');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update syllabus: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -367,12 +476,20 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                         inputField: Column(
                           children: [
                             ElevatedButton.icon(
-                              onPressed: () async {
+                              onPressed: _isUploadLoading ? null : () async {
                                 await _pickFile();
                               },
-                              icon:
-                                  const Icon(Icons.upload_file), // Upload icon
-                              label: const Text('Upload Syllabus File'),
+                              icon: _isUploadLoading 
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.upload_file),
+                              label: Text(_isUploadLoading ? 'Uploading...' : 'Upload Syllabus File'),
                             ),
                             // Display the selected image here
                             if (selectedFile !=
@@ -401,23 +518,12 @@ class _EditSyllabusViewState extends State<EditSyllabusView> {
                     child: Padding(
                       padding: EdgeInsets.all(_sizeInfo.innerSpacing / 2),
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue),
-                        onPressed: () {
-                          if (browserDefaultFormKey.currentState?.validate() ==
-                              true) {
-                            browserDefaultFormKey.currentState?.save();
-                            final title = titleController.text; // Get the class name
-                            // Debugging: Log the values
-  
-
-          //_updateSyllabus(title);
-
-                            
-                          }
-                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                        onPressed: _isLoading ? null : _updateSyllabus,
                         child: _isLoading
-                            ? const CircularProgressIndicator()
+                            ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              )
                             : const Text('Update Syllabus'),
                       ),
                     ),

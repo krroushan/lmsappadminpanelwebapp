@@ -1,6 +1,6 @@
 import '../classes/class_info.dart';
 import 'question.dart';
-import '../subject/subject.dart';
+import '../subject/subjector.dart';
 import '../board/board.dart';
 
 class GetExam {

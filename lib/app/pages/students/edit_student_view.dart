@@ -7,6 +7,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:feather_icons/feather_icons.dart';
 import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
 
@@ -22,6 +23,8 @@ import 'package:provider/provider.dart';
 import '../../core/api_service/board_service.dart';
 import '../../models/board/board.dart';
 import '../../models/student/student.dart';
+
+final logger = Logger();
 
 class EditStudentView extends StatefulWidget {
   final String studentId;
@@ -118,6 +121,7 @@ class _EditStudentViewState extends State<EditStudentView> {
   // Add this method to fetch student details
   Future<void> _fetchStudent() async {
     final student = await _studentService.getStudentById(widget.studentId, token);
+    logger.i('student: $student');
     setState(() {
       _student = student;
       // Populate form fields with student data
@@ -147,41 +151,46 @@ class _EditStudentViewState extends State<EditStudentView> {
   // Modify the update student method
   Future<void> _updateStudent() async {
     if (browserDefaultFormKey.currentState?.validate() == true) {
-      final updatedStudent = Student(
-        id: widget.studentId,
-        rollNo: _rollNoController.text,
-        fullName: _nameController.text,
-        email: _emailController.text,
-        classInfo: ClassInfo(id: _classId, name: _classId, description: _classId, classImage: _classId, createdAt: DateTime.now(), updatedAt: DateTime.now()),
-        board: Board(id: _boardId, name: _boardId, description: _boardId, boardImage: _boardId, createdAt: DateTime.now(), updatedAt: DateTime.now()),
-        schoolInstitutionName: _schoolInstitutionNameController.text,
-        schoolIdRollNumber: _schoolIdRollNumberController.text,
-        dateOfBirth: _dobController.text,
-        gender: _gender,
-        category: _category,
-        disability: _disabilityStatus,
-        typeOfInstitution: _typeOfInstitution,
-        fatherName: _fatherNameController.text,
-        motherName: _motherNameController.text,
-        phoneNumber: _phoneController.text,
-        alternatePhoneNumber: _rollNoController.text,
-        adharNumber: _adhaarNoController.text,
-        fatherOccupation: _fatherOccupation,
-        password: _passwordController.text,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      // Create update data object with only the fields that need to be updated
+      final updateData = {
+        'fullName': _nameController.text,
+        'fatherName': _fatherNameController.text,
+        'fatherOccupation': _fatherOccupation,
+        'motherName': _motherNameController.text,
+        'email': _emailController.text,
+        'phoneNumber': _phoneController.text,
+        'alternatePhoneNumber': _rollNoController.text, // Using rollNo as alternate phone
+        'rollNo': _rollNoController.text,
+        'adharNumber': _adhaarNoController.text,
+        'schoolIdRollNumber': _schoolIdRollNumberController.text,
+        'dateOfBirth': _dobController.text,
+        'gender': _gender,
+        'category': _category,
+        'disability': _disabilityStatus,
+        'typeOfInstitution': _typeOfInstitution,
+        'schoolInstitutionName': _schoolInstitutionNameController.text,
+        'class': _classId,
+        'board': _boardId,
+      };
 
+      // Only include password if it's not empty
+      if (_passwordController.text.isNotEmpty) {
+        updateData['password'] = _passwordController.text;
+      }
 
       try {
-        await _studentService.updateStudent(widget.studentId, updatedStudent.toJson(), token);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Student updated successfully')),
-        );
+        await _studentService.updateStudent(widget.studentId, updateData, token);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Student updated successfully')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating student: ${e.toString()}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating student: ${e.toString()}')),
+          );
+        }
       }
     }
   }
@@ -257,6 +266,7 @@ class _EditStudentViewState extends State<EditStudentView> {
     required List<DropdownMenuItem> items,
     required Function(dynamic) onChanged,
     required AcnooDropdownStyle dropdownStyle,
+    String? value,
   }) {
     return ResponsiveGridCol(
       lg: lg,
@@ -271,6 +281,7 @@ class _EditStudentViewState extends State<EditStudentView> {
             iconStyleData: dropdownStyle.iconStyle,
             dropdownStyleData: dropdownStyle.dropdownStyle,
             hint: Text(hint),
+            value: value,
             items: items,
             onChanged: onChanged,
           ),
@@ -338,6 +349,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Father\'s Occupation',
                       hint: 'Select Father\'s Occupation',
+                      value: _fatherOccupation.isNotEmpty ? _fatherOccupation : null,
                       items: const [
                         DropdownMenuItem(value: 'Self Employed', child: Text('Self Employed')),
                         DropdownMenuItem(value: 'Government', child: Text('Government')),
@@ -478,6 +490,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Gender',
                       hint: 'Select Gender',
+                      value: _gender.isNotEmpty ? _gender : null,
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
                         DropdownMenuItem(value: 'Female', child: Text('Female')),
@@ -495,6 +508,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Category',
                       hint: 'Select Category',
+                      value: _category.isNotEmpty ? _category : null,
                       items: const [
                         DropdownMenuItem(value: 'General', child: Text('General')),
                         DropdownMenuItem(value: 'OBC', child: Text('OBC')),
@@ -514,6 +528,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Disability Status',
                       hint: 'Select Disability Status',
+                      value: _disabilityStatus.isNotEmpty ? _disabilityStatus : null,
                       items: const [
                         DropdownMenuItem(value: 'Orthopedically', child: Text('Orthopedically')),
                         DropdownMenuItem(value: 'Visually Impaired', child: Text('Visually Impaired')),
@@ -533,6 +548,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Type of Institution',
                       hint: 'Select Type of Institution',
+                      value: _typeOfInstitution.isNotEmpty ? _typeOfInstitution : null,
                       items: const [
                         DropdownMenuItem(value: 'Government', child: Text('Government')),
                         DropdownMenuItem(value: 'Private', child: Text('Private')),
@@ -560,6 +576,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Class',
                       hint: 'Select Class',
+                      value: _classId.isNotEmpty ? _classId : null,
                       items: _classList
                           .map((classInfo) => DropdownMenuItem(
                               value: classInfo.id, child: Text(classInfo.name)))
@@ -577,6 +594,7 @@ class _EditStudentViewState extends State<EditStudentView> {
                       md: _md,
                       label: 'Board',
                       hint: 'Select Board',
+                      value: _boardId.isNotEmpty ? _boardId : null,
                       items: _boardList
                           .map((board) => DropdownMenuItem(
                               value: board.id, child: Text(board.name)))
@@ -598,15 +616,14 @@ class _EditStudentViewState extends State<EditStudentView> {
                       child: StatefulBuilder(
                         builder: (context, setState) {
                           return TextFieldLabelWrapper(
-                            labelText: 'Password',
+                            labelText: 'Password (Optional)',
                             inputField: TextFormField(
                               controller: _passwordController,
                               keyboardType: TextInputType.visiblePassword,
                               obscureText: _obscureText,
                               obscuringCharacter: '*',
                               decoration: InputDecoration(
-                                // hintText: 'Input Password',
-                                hintText: 'Enter Student Password',
+                                hintText: 'Enter new password (optional)',
                                 suffixIcon: IconButton(
                                   onPressed: () => setState(
                                     () => _obscureText = !_obscureText,
@@ -626,12 +643,6 @@ class _EditStudentViewState extends State<EditStudentView> {
                                 suffixIconConstraints:
                                     _inputFieldStyle.iconConstraints,
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter password';
-                                }
-                                return null;
-                              },
                             ),
                           );
                         },

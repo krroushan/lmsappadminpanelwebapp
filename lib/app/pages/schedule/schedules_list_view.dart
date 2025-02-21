@@ -29,7 +29,7 @@ class SchedulesListView extends StatefulWidget {
 }
 
 class _SchedulesListViewState extends State<SchedulesListView> {
-  final String API_BASE_URL = 'https://apkobi.com/api';
+  final String API_BASE_URL = 'https://api.ramaanya.com/api';
   List<Subject> _subjects = [];
   int _totalSubjects = 0;
 

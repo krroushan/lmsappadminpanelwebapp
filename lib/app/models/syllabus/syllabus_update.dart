@@ -4,6 +4,7 @@ class SyllabusUpdate {
   final String subjectId;
   final String classId;
   final String teacherId;
+  final String boardId;
 
   SyllabusUpdate({
     required this.title,
@@ -11,6 +12,7 @@ class SyllabusUpdate {
     required this.subjectId,
     required this.classId,
     required this.teacherId,
+    required this.boardId,
   });
 
   // Factory method to create a StudyMaterial from JSON
@@ -21,6 +23,7 @@ class SyllabusUpdate {
       subjectId: json['subject'],
       classId: json['class'],
       teacherId: json['teacher'],
+      boardId: json['board'],
     );
   }
 
@@ -32,6 +35,7 @@ class SyllabusUpdate {
       'subject': subjectId,
       'class': classId,
       'teacher': teacherId,
+      'board': boardId,
     };
   }
 }

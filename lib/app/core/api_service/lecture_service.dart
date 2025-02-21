@@ -26,6 +26,7 @@ class LectureService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      logger.i('jsonResponse: ${jsonResponse}');
       if (jsonResponse['success']) {
         List<Lecture> lectures = (jsonResponse['lectures'] as List)
             .map((lectureJson) => Lecture.fromJson(lectureJson))

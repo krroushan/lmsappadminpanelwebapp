@@ -214,7 +214,7 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                             title: entry.value.title,
                             description: entry.value.description,
                             cardWidgetType: BlogCardWidgetType.contentBL,
-                            image: NetworkImage('https://apkobi.com/uploads/lectures/thumbnails/${entry.value.thumbnail}'),
+                            image: NetworkImage('https://api.ramaanya.com/uploads/lectures/thumbnails/${entry.value.thumbnail}'),
                             isLoading: false,
                             lectureId: entry.value.id,
                             createdBy: entry.value.teacher?.fullName ?? '',
@@ -225,7 +225,9 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                             lectureType: entry.value.lectureType,
                             streamId: entry.value.streamId,
                             recordingUrl: entry.value.recordingUrl,
-                            onDelete: _deleteLecture,
+                            onDelete: _deleteLecture, errorBuilder: (context, error, stackTrace) { 
+                              return Image.asset('assets/images/no_image.png');
+                            },
                           ),
                         ),
                       ),

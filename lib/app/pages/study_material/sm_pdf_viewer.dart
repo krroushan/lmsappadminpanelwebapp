@@ -38,11 +38,11 @@ class _SMPDFViewerState extends State<SMPDFViewer> {
     final studyMaterialService = StudyMaterialService();
     final studyMaterial = await studyMaterialService.fetchStudyMaterialById(widget.smId, token);
     setState(() {
-      pdfUrl = 'https://apkobi.com/uploads/study-materials/pdfs/${studyMaterial.fileUrl}';
+      pdfUrl = 'https://api.ramaanya.com/uploads/study-materials/pdfs/${studyMaterial.fileUrl}';
       isLoading = false;
     });
     logger.d('studyMaterial: ${studyMaterial.fileUrl}');
-    logger.d('https://apkobi.com/uploads/study-materials/pdfs/$pdfUrl');
+    logger.d('https://api.ramaanya.com/uploads/study-materials/pdfs/$pdfUrl');
   }
 
   @override
@@ -77,7 +77,7 @@ class _SMPDFViewerState extends State<SMPDFViewer> {
                   pdfUrl,
                   controller: _pdfViewerController,
                   onDocumentLoaded: (details) {
-                    logger.d('https://apkobi.com/uploads/study-materials/pdfs/$pdfUrl');
+                    logger.d('https://api.ramaanya.com/uploads/study-materials/pdfs/$pdfUrl');
                   },
                 ),
               ),

@@ -61,7 +61,7 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
 
   void _setupStream() {
     AntMediaFlutter.connect(
-      'wss://ant.wizzyweb.in:5443/LiveApp/websocket',
+      'wss://ant.ramaanya.com:5443/LiveApp/websocket',
       streamId,
       '',  // roomId
       '',  // token

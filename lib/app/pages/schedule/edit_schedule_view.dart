@@ -137,7 +137,7 @@ class _EditScheduleViewState extends State<EditScheduleView> with WidgetsBinding
     authProvider.checkAuthentication();
     
     _routineService = RoutineService(
-      baseUrl: 'https://apkobi.com/api',
+      baseUrl: 'https://api.ramaanya.com/api',
       token: authProvider.getToken,
     );
 

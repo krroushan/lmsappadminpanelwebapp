@@ -117,7 +117,11 @@ class SyllabusService {
   }
 
     // Method to create a new class
-  Future<void> createSyllabus2(String title, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String boardId, String token) async {
+  Future<void> createSyllabus2(
+    String title, 
+    Uint8List fileBytes, 
+    String fileName, String classId, 
+    String subjectId, String teacherId, String boardId, String token) async {
     // Determine MIME type based on the file extension
     String mimeType;
     if (fileName.endsWith('.pdf')) {
@@ -164,8 +168,15 @@ class SyllabusService {
     }
   }
 
-    // Method to create a new class
-  Future<void> updateSyllabus2(String id, String title, Uint8List fileBytes, String fileName, String classId, String subjectId, String teacherId, String boardId, String token) async {
+  // upload pdf
+
+    Future<String> uploadSyllabusPdf(
+      String title, 
+      Uint8List fileBytes, 
+      String fileName, 
+      String prevPdfUrl,
+      String token
+      ) async {
     // Determine MIME type based on the file extension
     String mimeType;
     if (fileName.endsWith('.pdf')) {
@@ -176,11 +187,14 @@ class SyllabusService {
     
     // Implement the API call to upload the class info and image
     var request = http.MultipartRequest(
-      'PUT', 
-      Uri.parse('${ApiConfig.baseUrl}/syllabus2/$id')
+      'POST', 
+      Uri.parse('${ApiConfig.baseUrl}/syllabus/uploadpdf')
     );
     
     request.headers['Authorization'] = 'Bearer $token';
+
+    request.fields['title'] = title;
+    request.fields['prevPdfFile'] = prevPdfUrl;
 
     // Add the image file to the request
     request.files.add(http.MultipartFile.fromBytes(
@@ -190,23 +204,24 @@ class SyllabusService {
       contentType: MediaType.parse(mimeType),
     ));
 
-    request.fields['title'] = title;
-    request.fields['class'] = classId;
-    request.fields['subject'] = subjectId;
-    request.fields['teacher'] = teacherId;
-    request.fields['board'] = boardId;
+    logger.d('syllabus request: $request');
 
 
     var response = await request.send();
     var responseBody = await http.Response.fromStream(response);
     
-    // Check the response status
     if (response.statusCode == 200) {
-      logger.i('Study Material updated successfully');
-      return;
+      logger.i('Syllabus PDF uploaded successfully');
+      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+      return jsonResponse['fileUrl'];
     } else {
       logger.e('Failed: ${responseBody.body}');
       throw Exception('Failed: ${responseBody.body}');
     }
   }
+
+
+
+  
+
 }

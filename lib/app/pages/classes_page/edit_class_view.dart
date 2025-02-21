@@ -50,6 +50,8 @@ class _EditClassViewState extends State<EditClassView> {
   final TextEditingController classDescriptionController = TextEditingController();
   final TextEditingController classImageController = TextEditingController();
 
+  String? existingImageUrl;
+
 Future<void> _pickImage() async {
   FilePickerResult? result = await FilePicker.platform.pickFiles(
     type: FileType.image,
@@ -69,57 +71,75 @@ Future<void> _pickImage() async {
   print("selectedImage: ${selectedImage!.name}");
 }
 
-// Create Class method
-Future<void> _createClass(String className, String classDescription) async {
-  setState(() => _isLoading = true);
-  try {
-    // Create an instance of the ClassService
-    final classService = ClassService();
-
-    // Prepare the image data for upload
-    Uint8List? imageBytes = selectedImage?.bytes;
-
-    final response = await classService.createClass(
-      className, 
-      classDescription, 
-      imageBytes!, 
-      selectedImage!.name, 
-      token
-    );
-    print('response: ${response.message}');
-    // Check if the response is successful
-    if (response.success) {
-      // Handle the successful response (e.g., show a success message)
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Class created successfully', style: TextStyle(color: Colors.green))),
-      );
-      context.go('/dashboard/classes/all-classes');
-    } else {
-      // Handle the case where the response is null or not successful
-      print('Failed to create class1: ${response.message}'); // Log the error message
-      ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(response.message, style: const TextStyle(color: Colors.red))),
-      );
-    }
-
-    
-  } catch (e) {
-    // Catch any errors and display a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error1: $e')),
-    );
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
-
 @override
 void initState() {
   super.initState();
   final authProvider = Provider.of<AuthProvider>(context, listen: false);
   authProvider.checkAuthentication();
   token = authProvider.getToken;
+  // Load existing class data
+  _loadClassData();
+}
+
+Future<void> _loadClassData() async {
+  setState(() => _isLoading = true);
+  try {
+    final classService = ClassService();
+    final classData = await classService.getClassById(widget.classId, token);
+    
+    if (classData != null) {
+      setState(() {
+        classNameController.text = classData.name;
+        classDescriptionController.text = classData.description;
+        existingImageUrl = classData.classImage;
+      });
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error loading class data: $e')),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
+// Update the _createClass method to handle both create and update
+Future<void> _saveClass(String className, String classDescription) async {
+  setState(() => _isLoading = true);
+  try {
+    final classService = ClassService();
+    Uint8List? imageBytes = selectedImage?.bytes;
+
+    final response = await classService.updateClass(
+        widget.classId,
+        className,
+        classDescription,
+        imageBytes,
+        selectedImage?.name,
+        token);
+
+    if (response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Class updated successfully',
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+      );
+      context.go('/dashboard/classes/all-classes');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response.message, style: const TextStyle(color: Colors.red))),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
 }
 
   @override
@@ -144,13 +164,15 @@ void initState() {
     ).value;
 
     return Scaffold(
-      body: ListView(
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         padding: _sizeInfo.padding,
         children: [
           Form(
             key: browserDefaultFormKey,
             child: ShadowContainer(
-              headerText: 'Add Class',
+              headerText: 'Edit Class',
               child: ResponsiveGridRow(
                 children: [
                   ResponsiveGridCol(
@@ -219,13 +241,13 @@ void initState() {
                               label: const Text('Upload Image'),
                             ),
                             // Display the selected image here
-                            if (selectedImage != null) // Check if an image is selected
+                            if (selectedImage != null)
                               Column(
                                 children: [
                                   Image.memory(
-                                    Uint8List.fromList(selectedImage!.bytes!), // Display the selected image
-                                    width: 100, // Adjust the image fit
-                                    height: 100, // Adjust the image fit
+                                    Uint8List.fromList(selectedImage!.bytes!),
+                                    width: 100,
+                                    height: 100,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
@@ -241,6 +263,14 @@ void initState() {
                                     style: const TextStyle(fontSize: 16), // Set the desired text style
                                   ),
                                 ],
+                              )
+                            else if (existingImageUrl != null)
+                              Image.network(
+                                existingImageUrl!,
+                                width: 100,
+                                height: 100,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Text('Failed to load existing image'),
                               ),
                           ],
                         ),
@@ -261,12 +291,9 @@ void initState() {
                           if (browserDefaultFormKey.currentState?.validate() ==
                               true) {
                             browserDefaultFormKey.currentState?.save();
-                            final className = classNameController.text; // Get the class name
-                            final classDescription = classDescriptionController.text; // Get the class description
-                            final classImage = classImageController.text; // Get the class image
-
-                            // Call the method to create a student
-                            _createClass(className, classDescription);
+                            final className = classNameController.text;
+                            final classDescription = classDescriptionController.text;
+                            _saveClass(className, classDescription);
                           }
                         },
                         child: _isLoading ? const CircularProgressIndicator() : const Text('Save Class'),

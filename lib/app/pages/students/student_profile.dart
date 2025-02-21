@@ -24,37 +24,43 @@ class StudentProfileDetailsWidget extends StatefulWidget {
 
 class _StudentProfileDetailsWidgetState extends State<StudentProfileDetailsWidget> {
   Widget _buildProfileDetailRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.all(widget._padding),
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: widget.theme.colorScheme.outline.withOpacity(0.1),
+          ),
+        ),
+        color: Colors.white,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: widget._padding * 1.5,
+        vertical: widget._padding,
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 2,
             child: Text(
               label,
-              style: widget.textTheme.bodyLarge,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+              style: widget.textTheme.bodyLarge?.copyWith(
+                color: widget.theme.colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
+          ),
+          const Text(
+            ' : ',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           Expanded(
             flex: 4,
-            child: Row(
-              children: [
-                Text(
-                  ':',
-                  style: widget.textTheme.bodyMedium,
-                ),
-                const SizedBox(width: 8.0),
-                Flexible(
-                  child: Text(
-                    value,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: widget.textTheme.bodyLarge,
-                  ),
-                ),
-              ],
+            child: Text(
+              value,
+              style: widget.textTheme.bodyLarge?.copyWith(
+                color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
+              ),
             ),
           ),
         ],
@@ -68,39 +74,116 @@ class _StudentProfileDetailsWidgetState extends State<StudentProfileDetailsWidge
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          height: 140,
+          padding: EdgeInsets.all(widget._padding * 2),
           width: MediaQuery.of(context).size.width,
-          clipBehavior: Clip.antiAlias,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage('https://bbose.online/wp-content/uploads/2024/12/student-1.jpg'),
-              fit: BoxFit.cover,
-              alignment: Alignment.bottomCenter,
-              opacity: 0.3,
-              colorFilter: ColorFilter.mode(Colors.black, BlendMode.color),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                widget.theme.colorScheme.primary.withOpacity(0.5),
+                widget.theme.colorScheme.primary,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            //color: Colors.grey,
-            borderRadius: BorderRadius.only(
-              topRight: Radius.circular(20.0),
-              topLeft: Radius.circular(20.0),
-            ),
+            
           ),
-          child: Image.network('https://bbose.online/wp-content/uploads/2024/12/student-1.jpg', fit: BoxFit.fitHeight, alignment: Alignment.bottomCenter,),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 120,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 3,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        'https://bbose.online/wp-content/uploads/2024/12/student-1.jpg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.student.fullName,
+                          style: widget.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoText('Roll No: ${widget.student.rollNo}'),
+                        _buildInfoText('Board: ${widget.student.board.name}'),
+                        _buildInfoText('Class: ${widget.student.classInfo.name}'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        //const SizedBox(height: 70),
         Padding(
           padding: EdgeInsets.all(widget._padding),
           child: Container(
             decoration: BoxDecoration(
-              color: widget.theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(
-                color: widget.theme.colorScheme.outline,
-              ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: EdgeInsets.all(widget._padding * 1.5),
+                  decoration: BoxDecoration(
+                    color: widget.theme.colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        color: widget.theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Personal Details',
+                        style: widget.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: widget.theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 _buildProfileDetailRow('Name', widget.student.fullName),
                 Divider(
                   color: widget.theme.colorScheme.outline,
@@ -142,12 +225,6 @@ class _StudentProfileDetailsWidgetState extends State<StudentProfileDetailsWidge
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
-                //Roll No
-                _buildProfileDetailRow('Roll No', widget.student.rollNo),
-                Divider(
-                  color: widget.theme.colorScheme.outline,
-                  height: 0.0,
-                ),
                 //Adhar Number
                 _buildProfileDetailRow('Adhar Number', widget.student.adharNumber),
                 Divider(
@@ -184,19 +261,6 @@ class _StudentProfileDetailsWidgetState extends State<StudentProfileDetailsWidge
                   color: widget.theme.colorScheme.outline,
                   height: 0.0,
                 ),
-                //Board
-                _buildProfileDetailRow('Board', widget.student.board.name),
-                Divider(
-                  color: widget.theme.colorScheme.outline,
-                  height: 0.0,
-                ),
-                //Class
-                _buildProfileDetailRow('Class', widget.student.classInfo.name),
-                Divider(
-                  color: widget.theme.colorScheme.outline,
-                  height: 0.0,
-                ),
-                
               ],
             ),
           ),
@@ -205,4 +269,15 @@ class _StudentProfileDetailsWidgetState extends State<StudentProfileDetailsWidge
     );
   }
 
+  Widget _buildInfoText(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: widget.textTheme.titleMedium?.copyWith(
+          color: Colors.white.withOpacity(0.9),
+        ),
+      ),
+    );
+  }
 }

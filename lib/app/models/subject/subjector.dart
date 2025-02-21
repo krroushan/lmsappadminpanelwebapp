@@ -1,31 +1,28 @@
 
-import '../classes/class_info.dart';
-
 class Subject {
   final String id;
   final String name;
   final String description;
   final String subjectImage;
-  final ClassInfo classInfo; // Updated from ClassInfo to String
+  final String classId; // Changed from ClassInfo to String
 
   Subject({
     required this.id,
     required this.name,
     required this.description,
     required this.subjectImage,
-    required this.classInfo,
+    required this.classId,
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) {
-  return Subject(
-    id: json['_id'],
-    name: json['name'],
-    description: json['description'],
-    subjectImage: json['subjectImage'],
-    classInfo: ClassInfo.fromJson(json['class']) // Use the ClassInfo mode
-  );
-}
-
+    return Subject(
+      id: json['_id'],
+      name: json['name'],
+      description: json['description'],
+      subjectImage: json['subjectImage'],
+      classId: json['class'].toString(), // Convert to String since it's just an ID
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -33,7 +30,7 @@ class Subject {
       'name': name,
       'description': description,
       'subjectImage': subjectImage,
-      'class': classInfo.toJson(), // Serialize classInfo as a JSON object
+      'class': classId, // Send the ID as is
     };
   }
 }

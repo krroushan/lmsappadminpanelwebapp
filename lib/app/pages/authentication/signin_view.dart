@@ -101,7 +101,7 @@ class _SigninViewState extends State<SigninView> {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         body: isLoading // Show loading indicator if loading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : Row(
                 children: [
                   Flexible(

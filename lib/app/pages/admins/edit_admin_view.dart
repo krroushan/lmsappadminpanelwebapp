@@ -1,6 +1,6 @@
 // 🐦 Flutter imports:
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
 // 📦 Package imports:
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:feather_icons/feather_icons.dart';
@@ -13,10 +13,14 @@ import 'package:responsive_grid/responsive_grid.dart';
 import '../../../generated/l10n.dart' as l;
 import '../../core/helpers/field_styles/field_styles.dart';
 import '../../core/static/static.dart';
+import '../../providers/_auth_provider.dart';
 import '../../widgets/widgets.dart';
+import '../../core/api_service/admin_service.dart';
+import '../../models/admin/admin_create.dart';
 
 class EditAdminView extends StatefulWidget {
-  const EditAdminView({super.key});
+  final String adminId;
+  const EditAdminView({super.key, required this.adminId});
 
   @override
   State<EditAdminView> createState() => _EditAdminViewState();
@@ -27,10 +31,84 @@ class _EditAdminViewState extends State<EditAdminView> {
   bool _obscureText = true;
   late final _dateController = TextEditingController();
 
+  // Add form controllers
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  final _adminService = AdminService();
+  bool _isLoading = false;
+  String token = '';
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.checkAuthentication();
+    token = authProvider.getToken;
+    _loadAdminData();
+  }
+
   @override
   void dispose() {
     _dateController.dispose();
+    _usernameController.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAdminData() async {
+    setState(() => _isLoading = true);
+    try {
+      final admin = await _adminService.fetchAdminById(widget.adminId, token);
+      
+      // Populate the form fields
+      _usernameController.text = admin.username;
+      _fullNameController.text = admin.fullName;
+      _emailController.text = admin.email;
+      // Note: We don't set the password as it's typically not returned from the API
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading admin: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updateAdmin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final admin = AdminCreate(
+        username: _usernameController.text,
+        fullName: _fullNameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      await _adminService.updateAdmin(widget.adminId, admin, token);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Admin updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating admin: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -59,260 +137,138 @@ class _EditAdminViewState extends State<EditAdminView> {
     ).value;
 
     return Scaffold(
-      body: ListView(
-        padding: _sizeInfo.padding,
-        children: [
-          // Input Example
-          ShadowContainer(
-            headerText: 'Edit Admin',
-            child: ResponsiveGridRow(
-              children: [
-                // Name
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Name',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Name'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Email
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Email',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Email'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Phone
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Phone',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Phone'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Roll Number
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.all(
-                        _sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Roll Number',
-                      inputField: TextFormField(
-                        decoration: const InputDecoration(hintText: 'Roll Number'),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Gender
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Gender',
-                      inputField: DropdownButtonFormField2(
-                        menuItemStyleData: _dropdownStyle.menuItemStyle,
-                        buttonStyleData: _dropdownStyle.buttonStyle,
-                        iconStyleData: _dropdownStyle.iconStyle,
-                        dropdownStyleData: _dropdownStyle.dropdownStyle,
-                        // hint: const Text('Select'),
-                        hint: Text(lang.select),
-                        items: List.generate(
-                          5,
-                          (index) => DropdownMenuItem(
-                            value: index + 1,
-                            child: Text('${lang.dropdown} ${index + 1}'),
-                          ),
-                        ),
-                        onChanged: (value) {},
-                      ),
-                    ),
-                  ),
-                ),
-
-                //  Date of Birth
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                    child: TextFieldLabelWrapper(
-                      labelText: 'Date of Birth',
-                      inputField: TextFormField(
-                        controller: _dateController,
-                        keyboardType: TextInputType.visiblePassword,
-                        readOnly: true,
-                        selectionControls: EmptyTextSelectionControls(),
-                        decoration: InputDecoration(
-                          hintText: 'mm/dd/yyyy',
-                          suffixIcon:
-                              const Icon(IconlyLight.calendar, size: 20),
-                          suffixIconConstraints:
-                              _inputFieldStyle.iconConstraints,
-                        ),
-                        onTap: () async {
-                          final _result = await showDatePicker(
-                            context: context,
-                            firstDate: AppDateConfig.appFirstDate,
-                            lastDate: AppDateConfig.appLastDate,
-                            initialDate: DateTime.now(),
-                            builder: (context, child) => Theme(
-                              data: _theme.copyWith(
-                                datePickerTheme: DatePickerThemeData(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                              child: child!,
-                            ),
-                          );
-
-                          if (_result != null) {
-                            // setState(() => )
-                            _dateController.text = DateFormat(
-                                    AppDateConfig.appNumberOnlyDateFormat)
-                                .format(_result);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Address
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                      child: TextFieldLabelWrapper(
-                      labelText: 'Address',
-                      inputField: TextFormField(
-                        maxLines: 2,
-                        decoration: const InputDecoration(
-                          hintText: 'Address',
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              
-                       //  Password Field
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                    padding:
-                        EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                    child: StatefulBuilder(
-                      builder: (context, setState) {
-                        return TextFieldLabelWrapper(
-                          labelText: 'Password',
-                          inputField: TextFormField(
-                            keyboardType: TextInputType.visiblePassword,
-                            obscureText: _obscureText,
-                            obscuringCharacter: '*',
-                            decoration: InputDecoration(
-                              // hintText: 'Input Password',
-                              hintText: 'Password',
-                              suffixIcon: IconButton(
-                                onPressed: () => setState(
-                                  () => _obscureText = !_obscureText,
-                                ),
-                                padding: EdgeInsetsDirectional.zero,
-                                visualDensity: const VisualDensity(
-                                  horizontal: -4,
-                                  vertical: -4,
-                                ),
-                                icon: Icon(
-                                  _obscureText
-                                      ? FeatherIcons.eye
-                                      : FeatherIcons.eyeOff,
-                                  size: 20,
-                                ),
-                              ),
-                              suffixIconConstraints:
-                                  _inputFieldStyle.iconConstraints,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-                // Upload Photo
-                ResponsiveGridCol(
-                  lg: _lg,
-                  md: _md,
-                  child: Padding(
-                        padding: EdgeInsetsDirectional.all(
-                          _sizeInfo.innerSpacing / 2,
-                        ),
+      body: _isLoading ? 
+        const Center(child: CircularProgressIndicator()) :
+        Form(
+          key: _formKey,
+          child: ListView(
+            padding: _sizeInfo.padding,
+            children: [
+              ShadowContainer(
+                headerText: 'Edit Admin',
+                child: ResponsiveGridRow(
+                  children: [
+                    // Username
+                    ResponsiveGridCol(
+                      lg: _lg,
+                      md: _md,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
                         child: TextFieldLabelWrapper(
-                          labelText: 'Upload Photo',
-                          inputField: AcnooFileInputField(
-                            onTap: () {},
-                            decoration: const InputDecoration(
-                              hintText: 'Upload Photo',
-                              contentPadding: EdgeInsetsDirectional.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
+                          labelText: 'Username',
+                          inputField: TextFormField(
+                            controller: _usernameController,
+                            decoration: const InputDecoration(hintText: 'Username'),
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) return 'Username is required';
+                              return null;
+                            },
                           ),
                         ),
                       ),
                     ),
 
-              ],
-            ),
+                    // Name
+                    ResponsiveGridCol(
+                      lg: _lg,
+                      md: _md,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: TextFieldLabelWrapper(
+                          labelText: 'Name',
+                          inputField: TextFormField(
+                            controller: _fullNameController,
+                            decoration: const InputDecoration(hintText: 'Name'),
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) return 'Name is required';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
 
+                    // Email
+                    ResponsiveGridCol(
+                      lg: _lg,
+                      md: _md,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: TextFieldLabelWrapper(
+                          labelText: 'Email',
+                          inputField: TextFormField(
+                            controller: _emailController,
+                            decoration: const InputDecoration(hintText: 'Email'),
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) return 'Email is required';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Password Field
+                    ResponsiveGridCol(
+                      lg: _lg,
+                      md: _md,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: StatefulBuilder(
+                          builder: (context, setState) {
+                            return TextFieldLabelWrapper(
+                              labelText: 'Password',
+                              inputField: TextFormField(
+                                controller: _passwordController,
+                                keyboardType: TextInputType.visiblePassword,
+                                obscureText: _obscureText,
+                                obscuringCharacter: '*',
+                                decoration: InputDecoration(
+                                  hintText: 'Password',
+                                  suffixIcon: IconButton(
+                                    onPressed: () => setState(
+                                      () => _obscureText = !_obscureText,
+                                    ),
+                                    padding: EdgeInsetsDirectional.zero,
+                                    visualDensity: const VisualDensity(
+                                      horizontal: -4,
+                                      vertical: -4,
+                                    ),
+                                    icon: Icon(
+                                      _obscureText
+                                          ? FeatherIcons.eye
+                                          : FeatherIcons.eyeOff,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  suffixIconConstraints: _inputFieldStyle.iconConstraints,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+
+                    // Update button
+                    ResponsiveGridCol(
+                      lg: 12,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _updateAdmin,
+                          child: _isLoading 
+                            ? const Center(child: CircularProgressIndicator())
+                            : const Text('Update Admin'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-Padding(
-            padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-            child: ElevatedButton(
-              onPressed: () {
-                // Add your update logic here
-              },
-              child: const Text('Update Admin'),
-            ),
-          ),
-      ],
-      ),
+        ),
     );
   }
 }

@@ -134,7 +134,7 @@ class _ViewScheduleViewState extends State<ViewScheduleView> with WidgetsBinding
     authProvider.checkAuthentication();
     
     _routineService = RoutineService(
-      baseUrl: 'https://apkobi.com/api',
+      baseUrl: 'https://api.ramaanya.com/api',
       token: authProvider.getToken,
     );
 

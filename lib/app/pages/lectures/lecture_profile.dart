@@ -85,7 +85,7 @@ class _LectureProfileDetailsWidgetState extends State<LectureProfileDetailsWidge
             ),
           ),
           child: Image.network(
-            'https://apkobi.com/uploads/lectures/thumbnails/${widget.lecture.thumbnail}',
+            'https://api.ramaanya.com/uploads/lectures/thumbnails/${widget.lecture.thumbnail}',
             fit: BoxFit.fitHeight,
             alignment: Alignment.bottomCenter,
             loadingBuilder: (context, child, loadingProgress) {

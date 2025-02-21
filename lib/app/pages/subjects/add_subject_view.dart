@@ -47,11 +47,16 @@ class _AddSubjectViewState extends State<AddSubjectView> {
   String token = '';
 
   String _classId = "";
+  String prevSubjectImage = "";
 
   // Declare TextEditingControllers
   final TextEditingController subjectNameController = TextEditingController();
   final TextEditingController subjectDescriptionController = TextEditingController();
   final TextEditingController subjectImageController = TextEditingController();
+
+  String? uploadedImageUrl;  // Add this variable to store the uploaded image URL
+
+  double _uploadProgress = 0;
 
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -69,50 +74,84 @@ class _AddSubjectViewState extends State<AddSubjectView> {
           : 'unknown';
       imageSize = selectedImage!.size;
     });
-    print("selectedImage: ${selectedImage!.name}");
+
+    // Upload the image immediately after selection
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final imageUrl = await SubjectService().uploadSubjectImage(
+        selectedImage!.bytes!,
+        selectedImage!.name,
+        subjectNameController.text,
+        prevSubjectImage,
+        onProgress: (progress) {
+          setState(() {
+            _uploadProgress = progress;
+          });
+        },
+      );
+
+      setState(() {
+        uploadedImageUrl = imageUrl;
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image uploaded successfully')),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    }
   }
 
 // Create Class method
   Future<void> _createSubject(
       String subjectName, String subjectDescription, String classId) async {
-    logger.d('subjectName: $subjectName');
-    logger.d('subjectDescription: $subjectDescription');
-    logger.d('classId: $classId');
+    if (uploadedImageUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload an image first')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      // Create an instance of the ClassService
       final subjectService = SubjectService();
 
-      // Prepare the image data for upload
-      Uint8List? imageBytes = selectedImage?.bytes;
+      final response = await subjectService.createSubject(
+        subjectName,
+        subjectDescription,
+        uploadedImageUrl!,  // Use the uploaded image URL
+        token,
+        classId,
+      );
 
-      final response = await subjectService.createSubject(subjectName,
-          subjectDescription, imageBytes!, selectedImage!.name, token, classId);
-      logger.d('response: ${response.message}');
-      // Check if the response is successful
       if (response.success) {
-        // Handle the successful response (e.g., show a success message)
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Subject created successfully',
-                  style: TextStyle(color: Colors.green))),
+            content: Text('Subject created successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
         context.go('/dashboard/subjects/all-subjects');
       } else {
-        // Handle the case where the response is null or not successful
-        print(
-            'Failed to create subject1: ${response.message}'); // Log the error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(response.message,
-                  style: const TextStyle(color: Colors.red))),
+            content: Text(response.message),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
-      // Catch any errors and display a message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error1: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     } finally {
       setState(() => _isLoading = false);

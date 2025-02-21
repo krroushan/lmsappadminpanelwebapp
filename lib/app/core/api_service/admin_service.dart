@@ -84,4 +84,48 @@ class AdminService {
       }
     }
   }
+
+  Future<void> updateAdmin(String adminId, AdminCreate admin, String token) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/admin/$adminId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(admin.toJson()),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success']) {
+        logger.i('Admin updated successfully');
+        return;
+      }
+      throw Exception(jsonResponse['message'] ?? 'Failed to update admin');
+    } else {
+      final Map<String, dynamic> errorResponse = jsonDecode(response.body);
+      logger.e('Failed to update admin: ${errorResponse['message']}');
+      throw Exception(errorResponse['message'] ?? 'Failed to update admin');
+    }
+  }
+
+  Future<Admin> fetchAdminById(String adminId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/admin/$adminId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    logger.i('response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      logger.i('Admin fetched successfully');
+      return Admin.fromJson(jsonResponse);
+    } else {
+      logger.e('Failed to fetch admin: ${response.statusCode}');
+      throw Exception('Failed to fetch admin');
+    }
+  }
 }

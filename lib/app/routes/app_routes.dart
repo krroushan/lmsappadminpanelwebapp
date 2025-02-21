@@ -183,12 +183,12 @@ GoRoute(
                   child: EditLectureView(lectureId: state.pathParameters['lectureId'] ?? ''),
                 ),
               ),
-              GoRoute(
-                path: 'view-lecture/:lectureId',
-                pageBuilder: (context, state) => NoTransitionPage<void>(
-                  child: ViewLectureView(lectureId: state.pathParameters['lectureId'] ?? ''),
-                ),
-              ),
+              // GoRoute(
+              //   path: 'view-lecture/:lectureId',
+              //   pageBuilder: (context, state) => NoTransitionPage<void>(
+              //     child: ViewLectureView(lectureId: state.pathParameters['lectureId'] ?? ''),
+              //   ),
+              // ),
               GoRoute(
                 path: 'play-lecture/:lectureId',
                 pageBuilder: (context, state) => NoTransitionPage<void>(
@@ -551,9 +551,9 @@ GoRoute(
                 ),
               ),
               GoRoute(
-                path: 'edit-admin',
-                pageBuilder: (context, state) => const NoTransitionPage<void>(
-                  child: EditAdminView(),
+                path: 'edit-admin/:adminId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditAdminView(adminId: state.pathParameters['adminId'] ?? ''),
                 ),
               ),
               GoRoute(

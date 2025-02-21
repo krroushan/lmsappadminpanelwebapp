@@ -39,49 +39,33 @@ class SubjectService {
   }
 
   // Method to create a new class
-  Future<CreateSubjectResponse> createSubject(String subjectName, String subjectDescription, Uint8List imageBytes, String imageName, String token, String classId) async {
-    // Determine MIME type based on the file extension
-    String mimeType;
-    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (imageName.endsWith('.png')) {
-      mimeType = 'image/png';
-    } else if (imageName.endsWith('.webp')) {
-      mimeType = 'image/webp';
-    } else {
-      return CreateSubjectResponse(success: false, message: 'Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
-    }
-    
-    // Implement the API call to upload the subject info and image
-    var request = http.MultipartRequest(
-      'POST', 
-      Uri.parse('${ApiConfig.baseUrl}/subject/create')
+  Future<CreateSubjectResponse> createSubject(
+    String subjectName, 
+    String subjectDescription, 
+    String subjectImage,  // Now expects the image URL
+    String token, 
+    String classId
+  ) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/subject/create'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': subjectName,
+        'description': subjectDescription,
+        'class': classId,
+        'subjectImage': subjectImage,
+      }),
     );
     
-    request.headers['Authorization'] = 'Bearer $token';
-
-    request.fields['name'] = subjectName;
-    request.fields['description'] = subjectDescription;
-    request.fields['class'] = classId;
-
-    // Add the image file to the request
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      imageBytes,
-      filename: imageName,
-      contentType: MediaType.parse(mimeType),
-    ));
-
-    var response = await request.send();
-    var responseBody = await http.Response.fromStream(response);
-    
-    // Check the response status
     if (response.statusCode == 201) {
       logger.i('Subject created successfully');
       return CreateSubjectResponse(success: true, message: 'Subject created successfully');
     } else {
-      logger.e('Failed: ${responseBody.body}');
-      return CreateSubjectResponse(success: false, message: jsonDecode(responseBody.body)['message']);
+      logger.e('Failed: ${response.body}');
+      return CreateSubjectResponse(success: false, message: jsonDecode(response.body)['message']);
     }
   }
 
@@ -115,12 +99,100 @@ Future<Subject> fetchSubjectById(String subjectId, String token) async {
 
   if (response.statusCode == 200) {
     final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-    return Subject.fromJson(jsonResponse);
+    if (jsonResponse['success']) {
+      return Subject.fromJson(jsonResponse['subject']);  // Access the 'subject' field
+    } else {
+      throw Exception('Failed to fetch subject: ${jsonResponse['message']}');
+    }
   } else {
-    //logger.e('Failed to fetch subject');
     throw Exception('Failed to fetch subject');
   }
 }
+
+  Future<String> uploadSubjectImage(
+    Uint8List imageBytes,
+    String imageName,
+    String subjectName,
+    String prevSubjectImage, {required Null Function(dynamic progress) onProgress}
+  ) async {
+    // Determine MIME type based on the file extension
+    String mimeType;
+    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (imageName.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (imageName.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    } else {
+      throw Exception('Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/subject/uploadimage'),
+    );
+
+    // Add the required title field
+    request.fields['title'] = subjectName;  // Using subjectName as the title
+    request.fields['subjectName'] = subjectName;
+    request.fields['prevSubjectImage'] = prevSubjectImage;
+
+    // Add the image file to the request
+    request.files.add(http.MultipartFile.fromBytes(
+      'subjectImage',
+      imageBytes,
+      filename: imageName,
+      contentType: MediaType.parse(mimeType),
+    ));
+
+    var response = await request.send();
+    var responseBody = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+      if (jsonResponse['success']) {
+        logger.i('Subject image uploaded successfully');
+        return jsonResponse['subjectImage'];
+      } else {
+        logger.e('Failed to upload subject image');
+        throw Exception('Failed to upload subject image');
+      }
+    } else {
+      logger.e('Failed to upload subject image: ${responseBody.body}');
+      throw Exception('Failed to upload subject image: ${responseBody.body}');
+    }
+  }
+
+  Future<bool> updateSubject(
+    String subjectId,
+    String subjectName,
+    String subjectDescription,
+    String classId,
+    String subjectImage,
+    String token,
+  ) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/subject/$subjectId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': subjectName,
+        'description': subjectDescription,
+        'class': classId,
+        'subjectImage': subjectImage,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      logger.i('Subject updated successfully');
+      return true;
+    } else {
+      logger.e('Failed to update subject: ${response.body}');
+      throw Exception('Failed to update subject: ${response.body}');
+    }
+  }
 }
 
 

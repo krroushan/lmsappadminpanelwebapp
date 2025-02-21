@@ -38,11 +38,11 @@ class _ViewPDFSyllabusState extends State<ViewPDFSyllabus> {
     final syllabusService = SyllabusService();
     final syllabus = await syllabusService.fetchSyllabusById(widget.syllabusId, token);
     setState(() {
-      pdfUrl = 'https://apkobi.com/uploads/syllabuses/${syllabus.fileUrl}';
+      pdfUrl = 'https://api.ramaanya.com/uploads/syllabuses/${syllabus.fileUrl}';
       isLoading = false;
     });
     logger.d('syllabus: ${syllabus.fileUrl}');
-    logger.d('https://apkobi.com/uploads/syllabuses/$pdfUrl');
+    logger.d('https://api.ramaanya.com/uploads/syllabuses/$pdfUrl');
   }
 
   @override
@@ -77,7 +77,7 @@ class _ViewPDFSyllabusState extends State<ViewPDFSyllabus> {
                   pdfUrl,
                   controller: _pdfViewerController,
                   onDocumentLoaded: (details) {
-                    logger.d('https://apkobi.com/uploads/study-materials/pdfs/$pdfUrl');
+                    logger.d('https://api.ramaanya.com/uploads/study-materials/pdfs/$pdfUrl');
                   },
                 ),
               ),

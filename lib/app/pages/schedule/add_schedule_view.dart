@@ -49,7 +49,7 @@ class _AddScheduleViewState extends State<AddScheduleView> with WidgetsBindingOb
 
   Future<void> _createRoutine() async {
     _loading = true;
-    final url = 'https://apkobi.com/api/routine/create';
+    final url = 'https://api.ramaanya.com/api/routine/create';
     final body = {
       'board': _selectedBoard,
       'class': _selectedClass,

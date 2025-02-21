@@ -357,7 +357,7 @@ class _BoardListViewState extends State<BoardListView> {
                 DataCell(
                   ClipOval(
                     child: Image.network(
-                      'https://apkobi.com/uploads/boards/bseb.png', 
+                      'https://api.ramaanya.com/uploads/boards/bseb.png', 
                       width: 50, 
                       height: 50, 
                       fit: BoxFit.cover,
