@@ -9,13 +9,14 @@ class ExamCard extends StatefulWidget {
     required this.onDelete,
     required this.onEdit,
     required this.onView,
+    required this.onAddQuestion,
   });
 
   final GetExam exam;
   final Future<void> Function(String) onDelete;
   final Function(GetExam) onEdit;
   final Function(String) onView;
-
+  final Function(String) onAddQuestion;
   @override
   State<ExamCard> createState() => _ExamCardState();
 }
@@ -101,6 +102,11 @@ class _ExamCardState extends State<ExamCard> {
                         onPressed: () => widget.onDelete(widget.exam.id),
                         icon: const Icon(Icons.delete),
                         color: AcnooAppColors.kError,
+                      ),
+                      IconButton(
+                        onPressed: () => widget.onAddQuestion(widget.exam.id),
+                        icon: const Icon(Icons.add),
+                        color: AcnooAppColors.kSuccess,
                       ),
                     ],
                   ),

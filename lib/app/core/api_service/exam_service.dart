@@ -6,7 +6,7 @@ import 'package:logger/logger.dart';
 import '../../models/exam/get_exam.dart';
 
 class ExamService {
-  var logger = Logger();
+  static var logger = Logger();
   // Create a new exam
   Future<void> createExam(Exam exam, String token) async {
     logger.d('Creating exam with data: ${exam.toJson()}');
@@ -95,6 +95,62 @@ class ExamService {
     } else {
       logger.e("Failed to fetch exams: ${response.body}");
       throw Exception('Failed to fetch exams');
+    }
+  }
+
+  // Get exam by ID
+  static Future<GetExam> getExamById(String examId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/exam/$examId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      logger.d("Exam fetch response: ${response.body}");
+      
+      if (jsonResponse['success'] == true) {
+        return GetExam.fromJson(jsonResponse['exam']);
+      } else {
+        logger.e("Failed to fetch exam: ${jsonResponse['message']}");
+        throw Exception(jsonResponse['message'] ?? 'Failed to fetch exam');
+      }
+    } else {
+      logger.e("Failed to fetch exam: ${response.body}");
+      throw Exception('Failed to fetch exam');
+    }
+  }
+
+  // Update exam questions
+  Future<void> updateExamQuestions(String examId, List<String> questionIds, String token) async {
+    logger.d('Updating exam questions for exam: $examId with questions: $questionIds');
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/exam/$examId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'questions': questionIds,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      logger.d("Update questions response: ${response.body}");
+      
+      if (jsonResponse['success'] == true) {
+        return;
+      } else {
+        logger.e("Failed to update exam questions: ${jsonResponse['message']}");
+        throw Exception(jsonResponse['message'] ?? 'Failed to update exam questions');
+      }
+    } else {
+      logger.e("Failed to update exam questions: ${response.body}");
+      throw Exception('Failed to update exam questions');
     }
   }
 }

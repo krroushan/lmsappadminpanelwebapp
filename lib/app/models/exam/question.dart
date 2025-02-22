@@ -1,6 +1,7 @@
 import 'option.dart';
 
 class Question {
+  String id;
   String questionText;
   String questionType;
   List<Option>? options;
@@ -12,6 +13,7 @@ class Question {
   DateTime? updatedAt;
 
   Question({
+    this.id = '',
     required this.questionText,
     required this.questionType,
     this.options,
@@ -45,6 +47,7 @@ class Question {
     List<Option>? optionsList = optionsFromJson?.map((i) => Option.fromJson(i)).toList();
 
     return Question(
+      id: json['_id'],
       questionText: json['questionText'],
       questionType: json['questionType'].toString().toLowerCase(),
       options: optionsList,
@@ -59,6 +62,7 @@ class Question {
 
   Map<String, dynamic> toJson() {
     return {
+      '_id': id,
       'questionText': questionText,
       'questionType': questionType.toLowerCase(),
       if (options != null) 'options': options!.map((option) => option.toJson()).toList(),

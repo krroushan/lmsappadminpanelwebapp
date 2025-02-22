@@ -42,7 +42,22 @@ class QuestionService {
     }
     throw Exception('Failed to load questions');
   }
-  
-  
+
+  // Get questions by class, subject and board
+  Future<List<GetQuestion>> getQuestionsByFilter(String classId, String subjectId, String boardId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/question/class/$classId/subject/$subjectId/board/$boardId'),
+      headers: {
+        'Authorization': 'Bearer $token'
+      }
+    );
+    
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+      List<dynamic> questionsJson = data['questions'];
+      return questionsJson.map((json) => GetQuestion.fromJson(json)).toList();
+    }
+    throw Exception('Failed to load filtered questions');
+  }
 }   
 

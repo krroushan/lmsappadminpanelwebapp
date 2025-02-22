@@ -234,6 +234,9 @@ class _ExamListViewState extends State<ExamListView> {
                         onView: (examId) {
                           context.go('/dashboard/exams/exam-profile', extra: examId);
                         },
+                        onAddQuestion: (examId) {
+                          context.go('/dashboard/exams/add-question/$examId');
+                        },
                       ),
                     ),
                   ),

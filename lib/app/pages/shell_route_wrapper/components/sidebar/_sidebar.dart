@@ -113,18 +113,17 @@ class SideBarWidget extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Group Name
-                                // if (!iconOnly)
-                                //   Padding(
-                                //     padding: const EdgeInsetsDirectional.only(
-                                //         bottom: 16),
-                                //     child: Text(
-                                //       groupedMenu.name,
-                                //       style:
-                                //           _theme.textTheme.bodyMedium?.copyWith(
-                                //         fontWeight: FontWeight.w500,
-                                //       ),
-                                //     ),
-                                //   ),
+                                if (!iconOnly)
+                                  Padding(
+                                    padding: const EdgeInsetsDirectional.only(
+                                        bottom: 16),
+                                    child: Text(
+                                      groupedMenu.name,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
 
                                 // Grouped Menu
                                 ...groupedMenu.menus.map((menu) {
@@ -367,15 +366,24 @@ class SidebarMenuItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         constraints: BoxConstraints.tight(const Size.fromHeight(48)),
         alignment: AlignmentDirectional.center,
         decoration: ShapeDecoration(
-          color: isSelected ? _theme.colorScheme.primary : null,
+          color: isSelected 
+            ? _theme.colorScheme.primary.withOpacity(0.95)
+            : _theme.colorScheme.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
+          shadows: [
+            if (!isSelected) BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+            )
+          ],
         ),
         padding: EdgeInsetsDirectional.only(start: iconOnly ? 8 : 16, end: 8),
         child: Row(
@@ -432,39 +440,38 @@ class SidebarMenuItem extends StatelessWidget {
   }) {
     final _theme = Theme.of(context);
     final _isSelectedSubmenu = selectedSubmenu == submenu;
-
     final _selectedPrimaryColor = _theme.primaryColor;
+
     return Material(
       color: Colors.transparent,
       child: ListTile(
         onTap: () => onChanged?.call(submenu),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
-        tileColor:
-            _isSelectedSubmenu ? _selectedPrimaryColor.withOpacity(0.20) : null,
-        title: Text(submenu.name),
-        leading: Icon(
-          _isSelectedSubmenu
+        tileColor: _isSelectedSubmenu 
+          ? _selectedPrimaryColor.withOpacity(0.12)
+          : null,
+        title: Text(
+          submenu.name,
+          style: _theme.textTheme.bodyMedium?.copyWith(
+            color: _isSelectedSubmenu ? _selectedPrimaryColor : null,
+            fontWeight: _isSelectedSubmenu ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+        leading: AnimatedContainer(
+          duration: Duration(milliseconds: 200),
+          child: Icon(
+            _isSelectedSubmenu
               ? Icons.radio_button_checked_outlined
               : Icons.circle_outlined,
-          size: _isSelectedSubmenu ? 16 : 14,
+            size: _isSelectedSubmenu ? 16 : 14,
+            color: _isSelectedSubmenu ? _selectedPrimaryColor : _theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
         ),
         minLeadingWidth: 0,
-        visualDensity: const VisualDensity(
-          horizontal: -4,
-          vertical: -2,
-        ),
-        titleTextStyle: _theme.textTheme.bodyMedium?.copyWith(
-          color: _isSelectedSubmenu ? _selectedPrimaryColor : null,
-          fontWeight: FontWeight.w500,
-        ),
-        contentPadding: EdgeInsetsDirectional.only(
-          start: iconOnly ? 8 : 16,
-          end: 8,
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        iconColor: _isSelectedSubmenu ? _selectedPrimaryColor : null,
+        minVerticalPadding: 12,
+        dense: true,
       ),
     );
   }

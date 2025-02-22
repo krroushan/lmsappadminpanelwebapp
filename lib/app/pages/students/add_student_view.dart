@@ -144,24 +144,6 @@ class _AddStudentViewState extends State<AddStudentView> {
       String fatherOccupation,
       ) async {
         setState(() => _isLoading = true);
-        print("Gender: $gender");
-        print("Category: $category");
-        print("Disability: $disability");
-        print("Type of Institution: $typeOfInstitution");
-        print("fatherName: $fatherName");
-        print("motherName: $motherName");
-        print("phoneNumber: $phoneNumber");
-        print("alternatePhoneNumber: $alternatePhoneNumber");
-        print("adharNumber: $adharNumber");
-        print("dateOfBirth: $dateOfBirth");
-        print("schoolIdRollNumber: $schoolIdRollNumber");
-        print("schoolInstitutionName: $schoolInstitutionName");
-        print("rollNo: $rollNo");
-        print("fullName: $fullName");
-        print("email: $email");
-        print("password: $password");
-        print("classId: $classId");
-        print("boardId: $boardId");
     // Generate a fake student with valid data
     final studentData = StudentCreate.fromJson({
       "fullName": fullName,
@@ -184,8 +166,6 @@ class _AddStudentViewState extends State<AddStudentView> {
       "typeOfInstitution": typeOfInstitution,
       "fatherOccupation": fatherOccupation,
     });
-
-    print("Student Data: ${studentData.toJson()}");
 
     try {
       // Send the fake student to the API
@@ -218,7 +198,7 @@ class _AddStudentViewState extends State<AddStudentView> {
     }
   }
 
-  // Helper method to create form text fields
+  // Helper method to create form text fields with enhanced validation
   ResponsiveGridCol _buildTextFormField({
     required int lg,
     required int md,
@@ -227,6 +207,7 @@ class _AddStudentViewState extends State<AddStudentView> {
     required String hint,
     String? validationMessage,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     return ResponsiveGridCol(
       lg: lg,
@@ -239,9 +220,51 @@ class _AddStudentViewState extends State<AddStudentView> {
             controller: controller,
             keyboardType: keyboardType,
             decoration: InputDecoration(hintText: hint),
-            validator: validationMessage != null
-                ? (value) => value?.isEmpty ?? true ? validationMessage : null
-                : null,
+            validator: validator ?? (value) {
+              if (value == null || value.trim().isEmpty) {
+                return validationMessage ?? 'This field is required';
+              }
+              
+              // Email validation
+              if (keyboardType == TextInputType.emailAddress) {
+                if (!value.endsWith('@gmail.com')) {
+                  return 'Please enter a valid Gmail address';
+                }
+                final emailRegex = RegExp(r'^[a-zA-Z0-9.]+@gmail\.com$');
+                if (!emailRegex.hasMatch(value)) {
+                  return 'Invalid Gmail format. Use only letters, numbers, and dots';
+                }
+              }
+
+              // Name validation (for student, father, mother names)
+              if (label.toLowerCase().contains('name')) {
+                if (value.trim().length < 2) {
+                  return '$label must be at least 2 characters';
+                }
+                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                  return '$label can only contain letters and spaces';
+                }
+              }
+
+              // School name validation
+              if (label == 'School/Institution Name') {
+                if (value.trim().length < 3) {
+                  return 'School name must be at least 3 characters';
+                }
+                if (!RegExp(r'^[a-zA-Z0-9\s\-\.]+$').hasMatch(value)) {
+                  return 'School name can only contain letters, numbers, spaces, hyphens, and dots';
+                }
+              }
+
+              // Roll number validation
+              if (label == 'Roll Number' || label == 'School ID/Roll Number') {
+                if (!RegExp(r'^[a-zA-Z0-9\-]+$').hasMatch(value)) {
+                  return '$label can only contain letters, numbers, and hyphens';
+                }
+              }
+
+              return null;
+            },
           ),
         ),
       ),
@@ -308,11 +331,21 @@ class _AddStudentViewState extends State<AddStudentView> {
               if (value == null || value.isEmpty) {
                 return 'This field is required';
               }
-              if (isPhone && value.length != 10) {
-                return 'Phone number must be exactly 10 digits';
-              }
-              if (!isPhone && value.length != 12) {
-                return 'Adhaar number must be exactly 12 digits';
+
+              if (isPhone) {
+                if (value.length != 10) {
+                  return 'Phone number must be exactly 10 digits';
+                }
+                if (!value.startsWith(RegExp(r'[6-9]'))) {
+                  return 'Phone number must start with 6, 7, 8, or 9';
+                }
+              } else { // Adhaar validation
+                if (value.length != 12) {
+                  return 'Adhaar number must be exactly 12 digits';
+                }
+                if (!RegExp(r'^[2-9]{1}[0-9]{11}$').hasMatch(value)) {
+                  return 'Invalid Adhaar number format';
+                }
               }
               return null;
             },
@@ -409,503 +442,544 @@ class _AddStudentViewState extends State<AddStudentView> {
     return Scaffold(
       body: Form(
         key: browserDefaultFormKey,
-        child: ListView(
+        child: SingleChildScrollView(
           padding: _sizeInfo.padding,
-          children: [
-            // Photo and Basic Information in one row
-            ShadowContainer(
-              headerText: 'Student Information',
-              child: ResponsiveGridRow(
-                children: [
-                  // Photo Upload Column
-                  ResponsiveGridCol(
-                    lg: 4,
-                    md: 6,
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Student Photo', style: _theme.textTheme.titleMedium),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                if (_selectedImage != null)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.memory(
-                                      _selectedImage!,
-                                      width: 200,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                else
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.add_a_photo_outlined, 
-                                        size: 48, 
-                                        color: Colors.grey[600]
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Upload Passport Size Photo',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Max size: 1MB',
-                                        style: TextStyle(
-                                          color: Colors.grey[500],
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                Positioned.fill(
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
+          child: Column(
+            children: [
+              // Photo and Basic Information in one row
+              ShadowContainer(
+                headerText: 'Student Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    // Photo Upload Column
+                    ResponsiveGridCol(
+                      lg: 4,
+                      md: 6,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Student Photo', style: _theme.textTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  if (_selectedImage != null)
+                                    ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      onTap: _pickImage,
+                                      child: Image.memory(
+                                        _selectedImage!,
+                                        width: 200,
+                                        height: 200,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  else
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_a_photo_outlined, 
+                                          size: 48, 
+                                          color: Colors.grey[600]
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Upload Passport Size Photo',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Max size: 1MB',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  Positioned.fill(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(8),
+                                        onTap: _pickImage,
+                                      ),
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Basic Information Fields
+                    ResponsiveGridCol(
+                      lg: 8,
+                      md: 6,
+                      child: ResponsiveGridRow(
+                        children: [
+                          _buildTextFormField(
+                            lg: 6,
+                            md: 12,
+                            label: 'Name',
+                            controller: _nameController,
+                            hint: 'Enter Student Name',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter name';
+                              }
+                              if (value.trim().length < 2) {
+                                return 'Name must be at least 2 characters';
+                              }
+                              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                                return 'Name can only contain letters and spaces';
+                              }
+                              return null;
+                            }
+                          ),
+                          _buildDropdownField(
+                            lg: 6,
+                            md: 12,
+                            label: 'Gender',
+                            hint: 'Select Gender',
+                            value: _gender.isEmpty ? null : _gender,
+                            items: const [
+                              DropdownMenuItem(value: 'Male', child: Text('Male')),
+                              DropdownMenuItem(value: 'Female', child: Text('Female')),
+                            ],
+                            onChanged: (value) => setState(() => _gender = value as String),
+                            dropdownStyle: _dropdownStyle
+                          ),
+                          // Date of Birth field with adjusted size
+                          ResponsiveGridCol(
+                            lg: 6,
+                            md: 12,
+                            child: Padding(
+                              padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                              child: TextFieldLabelWrapper(
+                                labelText: 'Date of Birth',
+                                inputField: TextFormField(
+                                  controller: _dobController,
+                                  keyboardType: TextInputType.visiblePassword,
+                                  readOnly: true,
+                                  selectionControls: EmptyTextSelectionControls(),
+                                  decoration: InputDecoration(
+                                    hintText: 'mm/dd/yyyy',
+                                    suffixIcon: const Icon(IconlyLight.calendar, size: 20),
+                                    suffixIconConstraints: _inputFieldStyle.iconConstraints,
+                                  ),
+                                  validator: (value) => value?.isEmpty ?? true ? 'Please select date of birth' : null,
+                                  onTap: () async {
+                                    final _result = await showDatePicker(
+                                      context: context,
+                                      firstDate: AppDateConfig.appFirstDate,
+                                      lastDate: AppDateConfig.appLastDate,
+                                      initialDate: DateTime.now(),
+                                      builder: (context, child) => Theme(
+                                        data: _theme.copyWith(
+                                          datePickerTheme: DatePickerThemeData(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                        child: child!,
+                                      ),
+                                    );
+
+                                    if (_result != null) {
+                                      // setState(() => )
+                                      _dobController.text = DateFormat(
+                                              AppDateConfig.appNumberOnlyDateFormat)
+                                          .format(_result);
+                                    }
+                                  },
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  // Basic Information Fields
-                  ResponsiveGridCol(
-                    lg: 8,
-                    md: 6,
-                    child: ResponsiveGridRow(
-                      children: [
-                        _buildTextFormField(
-                          lg: 6,
-                          md: 12,
-                          label: 'Name',
-                          controller: _nameController,
-                          hint: 'Enter Student Name',
-                          validationMessage: 'Please enter name'
-                        ),
-                        _buildDropdownField(
-                          lg: 6,
-                          md: 12,
-                          label: 'Gender',
-                          hint: 'Select Gender',
-                          value: _gender.isEmpty ? null : _gender,
-                          items: const [
-                            DropdownMenuItem(value: 'Male', child: Text('Male')),
-                            DropdownMenuItem(value: 'Female', child: Text('Female')),
-                          ],
-                          onChanged: (value) => setState(() => _gender = value as String),
-                          dropdownStyle: _dropdownStyle
-                        ),
-                        // Date of Birth field with adjusted size
-                        ResponsiveGridCol(
-                          lg: 6,
-                          md: 12,
-                          child: Padding(
-                            padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                            child: TextFieldLabelWrapper(
-                              labelText: 'Date of Birth',
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Family Information
+              ShadowContainer(
+                headerText: 'Family Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    // Father's details
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Father Name',
+                      controller: _fatherNameController,
+                      hint: 'Enter Father Name',
+                      validationMessage: 'Please enter father name'
+                    ),
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Father\'s Occupation',
+                      hint: 'Select Father\'s Occupation',
+                      value: _fatherOccupation.isEmpty ? null : _fatherOccupation,
+                      items: const [
+                        DropdownMenuItem(value: 'Self Employed', child: Text('Self Employed')),
+                        DropdownMenuItem(value: 'Government', child: Text('Government')),
+                        DropdownMenuItem(value: 'Private', child: Text('Private')),
+                        DropdownMenuItem(value: 'Farmer', child: Text('Farmer')),
+                        DropdownMenuItem(value: 'Others', child: Text('Others')),
+                      ],
+                      onChanged: (value) => setState(() => _fatherOccupation = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Mother Name',
+                      controller: _motherNameController,
+                      hint: 'Enter Mother Name',
+                      validationMessage: 'Please enter mother name'
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Contact Information
+              ShadowContainer(
+                headerText: 'Contact Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Email',
+                      controller: _emailController,
+                      hint: 'Enter Student Email',
+                      keyboardType: TextInputType.emailAddress,
+                      validationMessage: 'Please enter a valid email address'
+                    ),
+                    _buildPhoneFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Phone',
+                      controller: _phoneController,
+                      hint: 'Enter 10-digit Phone Number',
+                    ),
+                    _buildPhoneFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Alternate Phone',
+                      controller: _alternatePhoneController,
+                      hint: 'Enter 10-digit Alternate Phone Number',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Academic Information
+              ShadowContainer(
+                headerText: 'Academic Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Class',
+                      hint: 'Select Class',
+                      items: _classList.map((classInfo) => 
+                        DropdownMenuItem(value: classInfo.id, child: Text(classInfo.name))
+                      ).toList(),
+                      onChanged: (value) => setState(() => _classId = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Board',
+                      hint: 'Select Board',
+                      items: _boardList.map((board) =>
+                        DropdownMenuItem(value: board.id, child: Text(board.name))
+                      ).toList(),
+                      onChanged: (value) => setState(() => _boardId = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Roll Number',
+                      controller: _rollNoController,
+                      hint: 'Enter Student Roll Number',
+                      validationMessage: 'Please enter roll number'
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // School Information
+              ShadowContainer(
+                headerText: 'School Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'School/Institution Name',
+                      controller: _schoolInstitutionNameController,
+                      hint: 'Enter Student School/Institution Name',
+                      validationMessage: 'Please enter school/institution name'
+                    ),
+                    _buildTextFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'School ID/Roll Number',
+                      controller: _schoolIdRollNumberController,
+                      hint: 'Enter School ID/Roll Number',
+                      validationMessage: 'Please enter school ID/roll number'
+                    ),
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Type of Institution',
+                      hint: 'Select Type of Institution',
+                      value: _typeOfInstitution.isEmpty ? null : _typeOfInstitution,
+                      items: const [
+                        DropdownMenuItem(value: 'Government', child: Text('Government')),
+                        DropdownMenuItem(value: 'Private', child: Text('Private')),
+                        DropdownMenuItem(value: 'Semi-Government', child: Text('Semi-Government')),
+                      ],
+                      onChanged: (value) => setState(() => _typeOfInstitution = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Additional Details
+              ShadowContainer(
+                headerText: 'Additional Details',
+                child: ResponsiveGridRow(
+                  children: [
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Category',
+                      hint: 'Select Category',
+                      value: _category.isEmpty ? null : _category,
+                      items: const [
+                        DropdownMenuItem(value: 'General', child: Text('General')),
+                        DropdownMenuItem(value: 'OBC', child: Text('OBC')),
+                        DropdownMenuItem(value: 'SC', child: Text('SC')),
+                        DropdownMenuItem(value: 'ST', child: Text('ST')),
+                      ],
+                      onChanged: (value) => setState(() => _category = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                    _buildDropdownField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Disability Status',
+                      hint: 'Select Disability Status',
+                      value: _disabilityStatus.isEmpty ? null : _disabilityStatus,
+                      items: const [
+                        DropdownMenuItem(value: 'Orthopedically', child: Text('Orthopedically')),
+                        DropdownMenuItem(value: 'Visually Impaired', child: Text('Visually Impaired')),
+                        DropdownMenuItem(value: 'Hearing', child: Text('Hearing')),
+                        DropdownMenuItem(value: 'None', child: Text('None')),
+                      ],
+                      onChanged: (value) => setState(() => _disabilityStatus = value as String),
+                      dropdownStyle: _dropdownStyle
+                    ),
+                    _buildPhoneFormField(
+                      lg: _lg,
+                      md: _md,
+                      label: 'Adhaar Number',
+                      controller: _adhaarNoController,
+                      hint: 'Enter 12-digit Adhaar Number',
+                      isPhone: false,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Security Information
+              ShadowContainer(
+                headerText: 'Security Information',
+                child: ResponsiveGridRow(
+                  children: [
+                    ResponsiveGridCol(
+                      lg: _lg,
+                      md: _md,
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                        child: StatefulBuilder(
+                          builder: (context, setState) {
+                            return TextFieldLabelWrapper(
+                              labelText: 'Password',
                               inputField: TextFormField(
-                                controller: _dobController,
+                                controller: _passwordController,
                                 keyboardType: TextInputType.visiblePassword,
-                                readOnly: true,
-                                selectionControls: EmptyTextSelectionControls(),
+                                obscureText: _obscureText,
+                                obscuringCharacter: '*',
                                 decoration: InputDecoration(
-                                  hintText: 'mm/dd/yyyy',
-                                  suffixIcon: const Icon(IconlyLight.calendar, size: 20),
+                                  hintText: 'Enter Student Password',
+                                  suffixIcon: IconButton(
+                                    onPressed: () => setState(
+                                      () => _obscureText = !_obscureText,
+                                    ),
+                                    padding: EdgeInsetsDirectional.zero,
+                                    visualDensity: const VisualDensity(
+                                      horizontal: -4,
+                                      vertical: -4,
+                                    ),
+                                    icon: Icon(
+                                      _obscureText ? FeatherIcons.eye : FeatherIcons.eyeOff,
+                                      size: 20,
+                                    ),
+                                  ),
                                   suffixIconConstraints: _inputFieldStyle.iconConstraints,
                                 ),
-                                validator: (value) => value?.isEmpty ?? true ? 'Please select date of birth' : null,
-                                onTap: () async {
-                                  final _result = await showDatePicker(
-                                    context: context,
-                                    firstDate: AppDateConfig.appFirstDate,
-                                    lastDate: AppDateConfig.appLastDate,
-                                    initialDate: DateTime.now(),
-                                    builder: (context, child) => Theme(
-                                      data: _theme.copyWith(
-                                        datePickerTheme: DatePickerThemeData(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                        ),
-                                      ),
-                                      child: child!,
-                                    ),
-                                  );
-
-                                  if (_result != null) {
-                                    // setState(() => )
-                                    _dobController.text = DateFormat(
-                                            AppDateConfig.appNumberOnlyDateFormat)
-                                        .format(_result);
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter password';
                                   }
+                                  if (value.length < 8) {
+                                    return 'Password must be at least 8 characters';
+                                  }
+                                  if (!RegExp(r'(?=.*[A-Z])').hasMatch(value)) {
+                                    return 'Password must contain at least one uppercase letter';
+                                  }
+                                  if (!RegExp(r'(?=.*[a-z])').hasMatch(value)) {
+                                    return 'Password must contain at least one lowercase letter';
+                                  }
+                                  if (!RegExp(r'(?=.*[0-9])').hasMatch(value)) {
+                                    return 'Password must contain at least one number';
+                                  }
+                                  if (!RegExp(r'(?=.*[!@#$%^&*])').hasMatch(value)) {
+                                    return 'Password must contain at least one special character';
+                                  }
+                                  return null;
                                 },
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Family Information
-            ShadowContainer(
-              headerText: 'Family Information',
-              child: ResponsiveGridRow(
-                children: [
-                  // Father's details
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Father Name',
-                    controller: _fatherNameController,
-                    hint: 'Enter Father Name',
-                    validationMessage: 'Please enter father name'
-                  ),
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Father\'s Occupation',
-                    hint: 'Select Father\'s Occupation',
-                    items: const [
-                      DropdownMenuItem(value: 'Self Employed', child: Text('Self Employed')),
-                      DropdownMenuItem(value: 'Government', child: Text('Government')),
-                      DropdownMenuItem(value: 'Private', child: Text('Private')),
-                      DropdownMenuItem(value: 'Farmer', child: Text('Farmer')),
-                      DropdownMenuItem(value: 'Others', child: Text('Others')),
-                    ],
-                    onChanged: (value) => setState(() => _fatherOccupation = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Mother Name',
-                    controller: _motherNameController,
-                    hint: 'Enter Mother Name',
-                    validationMessage: 'Please enter mother name'
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Contact Information
-            ShadowContainer(
-              headerText: 'Contact Information',
-              child: ResponsiveGridRow(
-                children: [
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Email',
-                    controller: _emailController,
-                    hint: 'Enter Student Email',
-                    validationMessage: 'Please enter email'
-                  ),
-                  _buildPhoneFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Phone',
-                    controller: _phoneController,
-                    hint: 'Enter 10-digit Phone Number',
-                  ),
-                  _buildPhoneFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Alternate Phone',
-                    controller: _alternatePhoneController,
-                    hint: 'Enter 10-digit Alternate Phone Number',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Academic Information
-            ShadowContainer(
-              headerText: 'Academic Information',
-              child: ResponsiveGridRow(
-                children: [
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Class',
-                    hint: 'Select Class',
-                    items: _classList.map((classInfo) => 
-                      DropdownMenuItem(value: classInfo.id, child: Text(classInfo.name))
-                    ).toList(),
-                    onChanged: (value) => setState(() => _classId = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Board',
-                    hint: 'Select Board',
-                    items: _boardList.map((board) =>
-                      DropdownMenuItem(value: board.id, child: Text(board.name))
-                    ).toList(),
-                    onChanged: (value) => setState(() => _boardId = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Roll Number',
-                    controller: _rollNoController,
-                    hint: 'Enter Student Roll Number',
-                    validationMessage: 'Please enter roll number'
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // School Information
-            ShadowContainer(
-              headerText: 'School Information',
-              child: ResponsiveGridRow(
-                children: [
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'School/Institution Name',
-                    controller: _schoolInstitutionNameController,
-                    hint: 'Enter Student School/Institution Name',
-                    validationMessage: 'Please enter school/institution name'
-                  ),
-                  _buildTextFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'School ID/Roll Number',
-                    controller: _schoolIdRollNumberController,
-                    hint: 'Enter School ID/Roll Number',
-                    validationMessage: 'Please enter school ID/roll number'
-                  ),
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Type of Institution',
-                    hint: 'Select Type of Institution',
-                    value: _typeOfInstitution.isEmpty ? null : _typeOfInstitution,
-                    items: const [
-                      DropdownMenuItem(value: 'Government', child: Text('Government')),
-                      DropdownMenuItem(value: 'Private', child: Text('Private')),
-                      DropdownMenuItem(value: 'Semi-Government', child: Text('Semi-Government')),
-                    ],
-                    onChanged: (value) => setState(() => _typeOfInstitution = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Additional Details
-            ShadowContainer(
-              headerText: 'Additional Details',
-              child: ResponsiveGridRow(
-                children: [
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Category',
-                    hint: 'Select Category',
-                    value: _category.isEmpty ? null : _category,
-                    items: const [
-                      DropdownMenuItem(value: 'General', child: Text('General')),
-                      DropdownMenuItem(value: 'OBC', child: Text('OBC')),
-                      DropdownMenuItem(value: 'SC', child: Text('SC')),
-                      DropdownMenuItem(value: 'ST', child: Text('ST')),
-                    ],
-                    onChanged: (value) => setState(() => _category = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                  _buildDropdownField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Disability Status',
-                    hint: 'Select Disability Status',
-                    value: _disabilityStatus.isEmpty ? null : _disabilityStatus,
-                    items: const [
-                      DropdownMenuItem(value: 'Orthopedically', child: Text('Orthopedically')),
-                      DropdownMenuItem(value: 'Visually Impaired', child: Text('Visually Impaired')),
-                      DropdownMenuItem(value: 'Hearing', child: Text('Hearing')),
-                      DropdownMenuItem(value: 'None', child: Text('None')),
-                    ],
-                    onChanged: (value) => setState(() => _disabilityStatus = value as String),
-                    dropdownStyle: _dropdownStyle
-                  ),
-                  _buildPhoneFormField(
-                    lg: _lg,
-                    md: _md,
-                    label: 'Adhaar Number',
-                    controller: _adhaarNoController,
-                    hint: 'Enter 12-digit Adhaar Number',
-                    isPhone: false,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Security Information
-            ShadowContainer(
-              headerText: 'Security Information',
-              child: ResponsiveGridRow(
-                children: [
-                  ResponsiveGridCol(
-                    lg: _lg,
-                    md: _md,
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-                      child: StatefulBuilder(
-                        builder: (context, setState) {
-                          return TextFieldLabelWrapper(
-                            labelText: 'Password',
-                            inputField: TextFormField(
-                              controller: _passwordController,
-                              keyboardType: TextInputType.visiblePassword,
-                              obscureText: _obscureText,
-                              obscuringCharacter: '*',
-                              decoration: InputDecoration(
-                                hintText: 'Enter Student Password',
-                                suffixIcon: IconButton(
-                                  onPressed: () => setState(
-                                    () => _obscureText = !_obscureText,
-                                  ),
-                                  padding: EdgeInsetsDirectional.zero,
-                                  visualDensity: const VisualDensity(
-                                    horizontal: -4,
-                                    vertical: -4,
-                                  ),
-                                  icon: Icon(
-                                    _obscureText ? FeatherIcons.eye : FeatherIcons.eyeOff,
-                                    size: 20,
-                                  ),
-                                ),
-                                suffixIconConstraints: _inputFieldStyle.iconConstraints,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter password';
-                                }
-                                return null;
-                              },
-                            ),
-                          );
-                        },
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            Padding(
-              padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
-              child: ElevatedButton(
-                onPressed: _isLoading 
-                  ? null 
-                  : () {
-                      if (browserDefaultFormKey.currentState?.validate() == true) {
-                        //browserDefaultFormKey.currentState?.save();
-                        final rollNo =
-                            _rollNoController.text; // Get the roll number
-                        final fullName = _nameController.text; // Get the full name
-                        final email = _emailController.text; // Get the email
-                        final password =
-                            _passwordController.text; // Get the password
-                        final classId = _classId; // Get the selected class
-                        final boardId = _boardId; // Get the selected board
-                        final schoolIdRollNumber = _schoolIdRollNumberController.text; // Get the school id/roll number
-                        final schoolInstitutionName = _schoolInstitutionNameController.text; // Get the school/institution name
-                        final fatherName = _fatherNameController.text; // Get the father name
-                        final motherName = _motherNameController.text; // Get the mother name
-                        final phoneNumber = _phoneController.text; // Get the phone number
-                        final alternatePhoneNumber = _alternatePhoneController.text; // Get the alternate phone number
-                        final adharNumber = _adhaarNoController.text; // Get the adhar number
-                        final dateOfBirth = _dobController.text; // Get the date of birth
-                        final gender = _gender; // Get the gender
-                        final category = _category; // Get the category
-                        final disability = _disabilityStatus; // Get the disability status
-                        final typeOfInstitution = _typeOfInstitution; // Get the type of institution
-                        final fatherOccupation = _fatherOccupation; // Get the father occupation
+              Padding(
+                padding: EdgeInsetsDirectional.all(_sizeInfo.innerSpacing / 2),
+                child: ElevatedButton(
+                  onPressed: _isLoading 
+                    ? null 
+                    : () {
+                        if (browserDefaultFormKey.currentState?.validate() == true) {
+                          // Additional validation before submission
+                          if (_selectedImage == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please upload a student photo'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
 
-                        _createStudent(
-                          rollNo, 
-                          fullName, 
-                          email, 
-                          password, 
-                          classId, 
-                          boardId, 
-                          schoolIdRollNumber, 
-                          schoolInstitutionName, 
-                          fatherName, 
-                          motherName, 
-                          phoneNumber, 
-                          alternatePhoneNumber, 
-                          adharNumber, 
-                          dateOfBirth, 
-                          gender, 
-                          category, 
-                          disability, 
-                          typeOfInstitution,
-                          fatherOccupation
-                          );
-                      }
-                    },
-                child: _isLoading
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.onPrimary,
+                          // Proceed with form submission
+                          final rollNo =
+                              _rollNoController.text; // Get the roll number
+                          final fullName = _nameController.text; // Get the full name
+                          final email = _emailController.text; // Get the email
+                          final password =
+                              _passwordController.text; // Get the password
+                          final classId = _classId; // Get the selected class
+                          final boardId = _boardId; // Get the selected board
+                          final schoolIdRollNumber = _schoolIdRollNumberController.text; // Get the school id/roll number
+                          final schoolInstitutionName = _schoolInstitutionNameController.text; // Get the school/institution name
+                          final fatherName = _fatherNameController.text; // Get the father name
+                          final motherName = _motherNameController.text; // Get the mother name
+                          final phoneNumber = _phoneController.text; // Get the phone number
+                          final alternatePhoneNumber = _alternatePhoneController.text; // Get the alternate phone number
+                          final adharNumber = _adhaarNoController.text; // Get the adhar number
+                          final dateOfBirth = _dobController.text; // Get the date of birth
+                          final gender = _gender; // Get the gender
+                          final category = _category; // Get the category
+                          final disability = _disabilityStatus; // Get the disability status
+                          final typeOfInstitution = _typeOfInstitution; // Get the type of institution
+                          final fatherOccupation = _fatherOccupation; // Get the father occupation
+
+                          _createStudent(
+                            rollNo, 
+                            fullName, 
+                            email, 
+                            password, 
+                            classId, 
+                            boardId, 
+                            schoolIdRollNumber, 
+                            schoolInstitutionName, 
+                            fatherName, 
+                            motherName, 
+                            phoneNumber, 
+                            alternatePhoneNumber, 
+                            adharNumber, 
+                            dateOfBirth, 
+                            gender, 
+                            category, 
+                            disability, 
+                            typeOfInstitution,
+                            fatherOccupation
+                            );
+                        }
+                      },
+                  child: _isLoading
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.onPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Creating Student...'),
-                      ],
-                    )
-                  : const Text('Add Student'),
+                          const SizedBox(width: 12),
+                          const Text('Creating Student...'),
+                        ],
+                      )
+                    : const Text('Add Student'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

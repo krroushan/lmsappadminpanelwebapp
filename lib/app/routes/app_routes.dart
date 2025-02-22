@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 // 🌎 Project imports:
 import '../pages/classes_page/edit_class_view.dart';
+import '../pages/exams/add_question_to_exam_view.dart';
 import '../pages/exams/add_question_view.dart';
 import '../pages/exams/question_list_view.dart';
 import '../pages/pages.dart';
@@ -273,6 +274,12 @@ GoRoute(
                 path: 'add-question',
                 pageBuilder: (context, state) => const NoTransitionPage<void>(
                   child: AddQuestionView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-question/:examId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: AddQuestionToExamView(examId: state.pathParameters['examId'] ?? ''),
                 ),
               ),
             ],
