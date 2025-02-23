@@ -166,6 +166,17 @@ List<GroupedMenuModel> _groupedMenus(BuildContext context) {
             SidebarSubmenuModel(name: "Add Question", navigationPath: "add-question"),
           ],
         ),
+        if (userRole == 'admin' || userRole == 'teacher')
+        SidebarItemModel(
+          name: 'Assignments',
+          iconPath: Icons.assignment,
+          sidebarItemType: SidebarItemType.submenu,
+          navigationPath: '/dashboard/assignments',
+          submenus: [
+            SidebarSubmenuModel(name: "All Assignments", navigationPath: "all-assignments"),
+            SidebarSubmenuModel(name: "Add Assignment", navigationPath: "add-assignment"),
+          ],
+        ),
       ],
     ),
 
@@ -242,8 +253,6 @@ List<GroupedMenuModel> _groupedMenus(BuildContext context) {
           submenus: [
             SidebarSubmenuModel(name: "All Fees", navigationPath: "all-fees"),
             SidebarSubmenuModel(name: "Add Fee", navigationPath: "add-fee"),
-            SidebarSubmenuModel(name: "Fee Categories", navigationPath: "fee-categories"),
-            SidebarSubmenuModel(name: "Fee Collection", navigationPath: "fee-collection"),
             SidebarSubmenuModel(name: "Payment History", navigationPath: "payment-history"),
           ],
         ),

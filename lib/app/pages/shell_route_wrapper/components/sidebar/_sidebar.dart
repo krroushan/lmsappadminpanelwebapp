@@ -103,11 +103,13 @@ class SideBarWidget extends StatelessWidget {
                       // ),
 
                       // Grouped Menus
-                      ..._groupedMenus(context).map(
+                      ..._groupedMenus(context).where((groupedMenu) => 
+                        // Only show groups that have menus after role filtering
+                        groupedMenu.menus.isNotEmpty
+                      ).map(
                         (groupedMenu) => rf.ResponsiveRowColumnItem(
                           child: Padding(
-                            padding:
-                                const EdgeInsetsDirectional.only(bottom: 16),
+                            padding: const EdgeInsetsDirectional.only(bottom: 16),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,8 +117,7 @@ class SideBarWidget extends StatelessWidget {
                                 // Group Name
                                 if (!iconOnly)
                                   Padding(
-                                    padding: const EdgeInsetsDirectional.only(
-                                        bottom: 16),
+                                    padding: const EdgeInsetsDirectional.only(bottom: 16),
                                     child: Text(
                                       groupedMenu.name,
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -133,8 +134,7 @@ class SideBarWidget extends StatelessWidget {
                                   );
                                   return rf.ResponsiveRowColumnItem(
                                     child: Padding(
-                                      padding: const EdgeInsetsDirectional.only(
-                                          bottom: 16),
+                                      padding: const EdgeInsetsDirectional.only(bottom: 16),
                                       child: SidebarMenuItem(
                                         iconOnly: iconOnly,
                                         menuTile: menu,

@@ -217,30 +217,50 @@ class _ExamListViewState extends State<ExamListView> {
                     ),
                   ),
                 ]
-              : _exams.asMap().entries.map(
-                  (entry) => ResponsiveGridCol(
-                    lg: 3,
-                    md: 4,
-                    sm: 12,
-                    xs: 12,
-                    child: Padding(
-                      padding: _sizeInfo.padding / 2.5,
-                      child: ExamCard(
-                        exam: entry.value,
-                        onDelete: _deleteExam,
-                        onEdit: (exam) {
-                          context.go('/dashboard/exams/edit-exam', extra: exam);
-                        },
-                        onView: (examId) {
-                          context.go('/dashboard/exams/exam-profile', extra: examId);
-                        },
-                        onAddQuestion: (examId) {
-                          context.go('/dashboard/exams/add-question/$examId');
-                        },
+              : _exams.isEmpty
+                  ? <ResponsiveGridCol>[
+                      ResponsiveGridCol(
+                        lg: 12,
+                        md: 12,
+                        sm: 12,
+                        xs: 12,
+                        child: Container(
+                          height: 200,
+                          child: Center(
+                            child: Text(
+                              'No exams found',
+                              style: _theme.textTheme.titleMedium?.copyWith(
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ).toList(),
+                    ]
+                  : _exams.asMap().entries.map(
+                      (entry) => ResponsiveGridCol(
+                        lg: 3,
+                        md: 4,
+                        sm: 12,
+                        xs: 12,
+                        child: Padding(
+                          padding: _sizeInfo.padding / 2.5,
+                          child: ExamCard(
+                            exam: entry.value,
+                            onDelete: _deleteExam,
+                            onEdit: (exam) {
+                              context.go('/dashboard/exams/edit/${exam.id}');
+                            },
+                            onView: (examId) {
+                              context.go('/dashboard/exams/exam-profile', extra: examId);
+                            },
+                            onAddQuestion: (examId) {
+                                context.go('/dashboard/exams/add-question/$examId');
+                            },
+                          ),
+                        ),
+                      ),
+                    ).toList(),
           ),
         ],
       ),

@@ -46,77 +46,125 @@ class _AddBoardViewState extends State<AddBoardView> {
   final TextEditingController boardDescriptionController = TextEditingController();
   final TextEditingController boardImageController = TextEditingController();
 
-Future<void> _pickImage() async {
-  FilePickerResult? result = await FilePicker.platform.pickFiles(
-    type: FileType.image,
-  );
+  // Add new variable to store uploaded image URL
+  String? uploadedImageUrl;
 
-  if (result == null) {
-    return;
-  }
+  // Add new variable for image upload loading state
+  bool _isImageUploading = false;
 
-  setState(() {
-    selectedImage = result.files.first;
-    mimeType = selectedImage!.extension != null
-            ? 'image/${selectedImage!.extension}'
-            : 'unknown';
-    imageSize = selectedImage!.size;
-  });
-  print("selectedImage: ${selectedImage!.name}");
-}
-
-// Create Class method
-Future<void> _createBoard(String boardName, String boardDescription) async {
-  setState(() => _isLoading = true);
-  try {
-    // Create an instance of the ClassService
-    final boardService = BoardService();
-
-    // Prepare the image data for upload
-    Uint8List? imageBytes = selectedImage?.bytes;
-
-    final response = await boardService.createBoard(
-      boardName, 
-      boardDescription, 
-      imageBytes!, 
-      selectedImage!.name, 
-      token
-    );
-    print('response: ${response.message}');
-    // Check if the response is successful
-    if (response.success) {
-      // Handle the successful response (e.g., show a success message)
-
+  Future<void> _pickImage() async {
+    // Check if board name is empty
+    if (boardNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Board created successfully', style: TextStyle(color: Colors.green))),
+        const SnackBar(
+          content: Text('Please enter board name before uploading an image'),
+          backgroundColor: Colors.red,
+        ),
       );
-      context.go('/dashboard/boards/all-boards');
-    } else {
-      // Handle the case where the response is null or not successful
-      print('Failed to create board1: ${response.message}'); // Log the error message
-      ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(response.message, style: const TextStyle(color: Colors.red))),
-      );
+      return;
     }
 
-    
-  } catch (e) {
-    // Catch any errors and display a message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error1: $e')),
-    );
-  } finally {
-    setState(() => _isLoading = false);
-  }
-}
+    setState(() => _isImageUploading = true);
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
 
-@override
-void initState() {
-  super.initState();
-  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-  authProvider.checkAuthentication();
-  token = authProvider.getToken;
-}
+      if (result == null) {
+        return;
+      }
+
+      setState(() {
+        selectedImage = result.files.first;
+        mimeType = selectedImage!.extension != null
+                ? 'image/${selectedImage!.extension}'
+                : 'unknown';
+        imageSize = selectedImage!.size;
+      });
+
+      // Start uploading immediately after image is selected
+      if (selectedImage != null && selectedImage!.bytes != null) {
+        final boardService = BoardService();
+        try {
+          final imageResponse = await boardService.uploadBoardImage(
+            selectedImage!.bytes!,
+            selectedImage!.name,
+            boardNameController.text, // Now we know this isn't empty
+            '', // empty string for new board
+            token
+          );
+          print('imageResponse: $imageResponse');
+          setState(() {
+            uploadedImageUrl = imageResponse;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Image uploaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error uploading image: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isImageUploading = false);
+    }
+  }
+
+  // Modify _createBoard method
+  Future<void> _createBoard(String boardName, String boardDescription) async {
+    setState(() => _isLoading = true);
+    try {
+      final boardService = BoardService();
+
+      // Create board with already uploaded image URL
+      final response = await boardService.createBoard(
+        boardName,
+        boardDescription,
+        uploadedImageUrl ?? '', // Use the previously uploaded image URL
+        token
+      );
+
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Board created successfully', style: TextStyle(color: Colors.green))),
+        );
+        context.go('/dashboard/boards/all-boards');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message, style: const TextStyle(color: Colors.red))),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.checkAuthentication();
+    token = authProvider.getToken;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,11 +256,17 @@ void initState() {
                         inputField: Column(
                           children: [
                             ElevatedButton.icon(
-                              onPressed: () async {
+                              onPressed: _isImageUploading ? null : () async {
                                 await _pickImage();
                               },
-                              icon: const Icon(Icons.upload_file), // Upload icon
-                              label: const Text('Upload Image'),
+                              icon: _isImageUploading 
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2)
+                                  )
+                                : const Icon(Icons.upload_file),
+                              label: Text(_isImageUploading ? 'Uploading...' : 'Upload Image'),
                             ),
                             // Display the selected image here
                             if (selectedImage != null) // Check if an image is selected

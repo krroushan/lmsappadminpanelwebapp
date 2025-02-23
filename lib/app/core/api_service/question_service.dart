@@ -11,13 +11,25 @@ class QuestionService {
 
   // create question
   Future<void> createQuestion(Question question, String token) async {
+    print('Creating question: ${question.toJson()}');
+    // make json body
+    Map<String, dynamic> jsonBody = {
+      'questionText': question.questionText,
+      'questionType': question.questionType,
+      'options': question.options,
+      'correctOpenEndedAnswer': question.correctOpenEndedAnswer,
+      'class': question.classId,
+      'subject': question.subjectId,
+      'board': question.boardId,
+    };
+    
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/question/create'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token'
       },
-      body: jsonEncode(question.toJson())
+      body: jsonEncode(jsonBody)
     );
     print('Response: ${response.body}');
     
@@ -59,5 +71,42 @@ class QuestionService {
     }
     throw Exception('Failed to load filtered questions');
   }
+
+  // Get question by id
+  Future<GetQuestion> getQuestionById(String id, String token) async {
+    final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/question/$id'), headers: {
+      'Authorization': 'Bearer $token'
+    });
+
+    if (response.statusCode == 200) {
+      return GetQuestion.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to load question');
+  }
+
+  // Update question
+  Future<void> updateQuestion(String id, Question question, String token) async {
+    final response = await http.put(Uri.parse('${ApiConfig.baseUrl}/question/$id'), headers: {
+      'Authorization': 'Bearer $token'
+    }, body: jsonEncode(question.toJson()));
+    
+    if (response.statusCode == 200) {
+      return;
+    }
+    throw Exception('Failed to update question');
+  }
+
+  // Delete question
+  Future<void> deleteQuestion(String id, String token) async {
+    final response = await http.delete(Uri.parse('${ApiConfig.baseUrl}/question/$id'), headers: {
+      'Authorization': 'Bearer $token'
+    });
+
+    if (response.statusCode == 200) {
+      return;
+    }
+    throw Exception('Failed to delete question');
+  }
+  
 }   
 

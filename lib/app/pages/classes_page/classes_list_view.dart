@@ -166,6 +166,25 @@ class _ClassesListViewState extends State<ClassesListView> {
     TextTheme textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
 
+    // Add no classes message widget
+    Widget noClassesMessage = Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.school_outlined,
+            size: 64,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No classes found',
+            style: textTheme.titleMedium?.copyWith(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
       body: Padding(
         padding: _sizeInfo.padding,
@@ -218,41 +237,48 @@ class _ClassesListViewState extends State<ClassesListView> {
                           ),
 
                     //______________________________________________________________________Data_table__________________
-                    isMobile || isTablet
-                        ? RawScrollbar(
-                            padding: const EdgeInsets.only(left: 18),
-                            trackBorderColor: theme.colorScheme.surface,
-                            trackVisibility: true,
-                            scrollbarOrientation: ScrollbarOrientation.bottom,
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            thickness: 8.0,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: userListDataTable(context),
+                    Padding(
+                      padding: _sizeInfo.padding,
+                      child: _isLoading 
+                        ? const Center(child: CircularProgressIndicator())
+                        : _classes.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.school_outlined,
+                                    size: 64,
+                                    color: Colors.grey,
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No classes found',
+                                    style: textTheme.titleMedium?.copyWith(color: Colors.grey),
+                                  ),
+                                ],
                               ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
+                            )
+                          : GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isMobile ? 1 : isTablet ? 2 : 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 3,
+                              ),
+                              itemCount: _classes.length,
+                              itemBuilder: (context, index) {
+                                final classInfo = _classes[index];
+                                return ClassCard(
+                                  classInfo: classInfo,
+                                  onEdit: () => context.go('/dashboard/classes/edit-class/${classInfo.id}'),
+                                  onDelete: () => _deleteClass(classInfo.id, token),
+                                );
+                              },
                             ),
-                          ),
+                    ),
 
                   ],
                 );
@@ -317,74 +343,6 @@ class _ClassesListViewState extends State<ClassesListView> {
       },
     );
   }
-
-  ///_______________________________________________________________User_List_Data_Table___________________________
-  Theme userListDataTable(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    return Theme(
-      data: ThemeData(
-          dividerColor: theme.colorScheme.outline,
-          dividerTheme: DividerThemeData(
-            color: theme.colorScheme.outline,
-          )),
-      child: DataTable(
-        checkboxHorizontalMargin: 16,
-        dataRowMaxHeight: 70,
-        headingTextStyle: textTheme.titleMedium,
-        dataTextStyle: textTheme.bodySmall,
-        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-        showBottomBorder: true,
-        columns: const [
-          DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Image')),
-          DataColumn(label: Text('Name')),
-          // DataColumn(label: Text('Description')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: _classes.asMap().entries.map(
-          (entry) {
-            final index = entry.key + 1;
-            final classInfo = entry.value;
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(
-                  ClipOval(
-                    child: Image.network(
-                      'https://bbose.online/wp-content/uploads/2024/12/${classInfo.classImage}', 
-                      width: 50, 
-                      height: 50, 
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                DataCell(Text(classInfo.name)),
-                // DataCell(Text(classInfo.description)),
-                DataCell(
-                  Row(
-                    children: [
-                      // IconButton(onPressed: () {
-                      //   context.go('/dashboard/classes/view-class/${classInfo.id}');
-                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/classes/edit-class/${classInfo.id}');
-                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-
-                      IconButton(onPressed: () async {
-                        await _deleteClass(classInfo.id, token);
-                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ).toList(),
-      ),
-    );
-  }
 }
 
 class _SizeInfo {
@@ -396,4 +354,91 @@ class _SizeInfo {
     this.padding = const EdgeInsets.all(24),
     this.innerSpacing = 24,
   });
+}
+
+class ClassCard extends StatelessWidget {
+  final ClassInfo classInfo;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const ClassCard({
+    super.key,
+    required this.classInfo,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AcnooAppColors.kWhiteColor,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.network(
+                'https://api.ramaanya.com/uploads/classes/${classInfo.classImage}',
+                height: 60,
+                width: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    color: AcnooAppColors.kPrimary100,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Icon(Icons.image_not_supported, size: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    classInfo.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    classInfo.description ?? 'No description',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo),
+                  onPressed: onEdit,
+                  tooltip: 'Edit Class',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: AcnooAppColors.kError),
+                  onPressed: onDelete,
+                  tooltip: 'Delete Class',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

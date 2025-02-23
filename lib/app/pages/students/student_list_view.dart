@@ -1,6 +1,9 @@
 // 🐦 Flutter imports:
 import 'package:flutter/material.dart';
-
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
+import 'dart:convert';
+import 'dart:io';
 // 📦 Package imports:
 import 'package:iconly/iconly.dart';
 import 'package:logger/logger.dart';
@@ -27,6 +30,7 @@ class StudentListView extends StatefulWidget {
 class _StudentListViewState extends State<StudentListView> {
   int _totalStudents = 0;
   List<Student> _students = [];
+  List<Student> _allStudents = [];
 
   var log = Logger();
 
@@ -61,9 +65,10 @@ class _StudentListViewState extends State<StudentListView> {
       _isLoading = true;
     });
     try {
-      List<StudentAllResponse> response = await _studentService.fetchStudents(page, token); // Fetch the response
+      List<StudentAllResponse> response = await _studentService.fetchStudents(page, token);
       setState(() {
-        _students = response[0].students;
+        _allStudents = response[0].students;
+        _filterStudents();
         _totalStudents = response[0].total;
         _totalPages = response[0].totalPages;
         _isLoading = false;
@@ -76,6 +81,23 @@ class _StudentListViewState extends State<StudentListView> {
       //print(e);
       throw Exception('Failed to load students');
     }
+  }
+
+  // Add method to filter students
+  void _filterStudents() {
+    if (_searchQuery.isEmpty) {
+      _students = _allStudents;
+      return;
+    }
+
+    final query = _searchQuery.toLowerCase();
+    _students = _allStudents.where((student) {
+      return student.fullName.toLowerCase().contains(query) ||
+             student.rollNo.toLowerCase().contains(query) ||
+             student.email.toLowerCase().contains(query) ||
+             student.phoneNumber.toLowerCase().contains(query) ||
+             (student.classInfo.name?.toLowerCase().contains(query) ?? false);
+    }).toList();
   }
 
   // delete confirmation dialog
@@ -128,12 +150,11 @@ class _StudentListViewState extends State<StudentListView> {
     }
   }
 
-
-  // search query
+  // Update search query method to filter locally
   void _setSearchQuery(String query) {
     setState(() {
       _searchQuery = query;
-      _currentPage = 0; // Reset to the first page when searching
+      _filterStudents(); // Filter existing students
     });
   }
 
@@ -205,8 +226,9 @@ class _StudentListViewState extends State<StudentListView> {
                                   children: [
                                     const Spacer(),
                                     addStudentButton(textTheme),
+                                    const SizedBox(width: 8),
+                                    uploadCsvButton(textTheme),
                                     const Spacer(),
-                                    // fakeStudentButton(textTheme),
                                   ],
                                 ),
                                 const SizedBox(height: 16.0),
@@ -225,7 +247,8 @@ class _StudentListViewState extends State<StudentListView> {
                                 ),
                                 Spacer(flex: isTablet || isMobile ? 1 : 2),
                                 addStudentButton(textTheme),
-                                //const Spacer(flex: 1),
+                                const SizedBox(width: 8),
+                                uploadCsvButton(textTheme),
                               ],
                             ),
                           ),
@@ -243,36 +266,54 @@ class _StudentListViewState extends State<StudentListView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
+                                if (_isLoading)
+                                  const Center(child: CircularProgressIndicator())
+                                else if (_students.isEmpty)
+                                  SizedBox(
+                                    width: constraints.maxWidth,
+                                    height: 300,
+                                    child: _buildNoStudentsMessage(context),
+                                  )
+                                else
+                                  SingleChildScrollView(
+                                    controller: _scrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
+                                      ),
+                                      child: userListDataTable(context),
                                     ),
-                                    child: userListDataTable(context),
                                   ),
-                                ),
-                                Padding(
-                                  padding: _sizeInfo.padding,
-                                  child: Text(
-                                    '${l.S.of(context).showing} ${_currentPage * _rowsPerPage + 1} ${l.S.of(context).to} ${_currentPage * _rowsPerPage + _students.length} ${l.S.of(context).OF} ${_students.length} ${l.S.of(context).entries}',
-                                    overflow: TextOverflow.ellipsis,
+                                if (_students.isNotEmpty)
+                                  Padding(
+                                    padding: _sizeInfo.padding,
+                                    child: Text(
+                                      '${l.S.of(context).showing} ${_currentPage * _rowsPerPage + 1} ${l.S.of(context).to} ${_currentPage * _rowsPerPage + _students.length} ${l.S.of(context).OF} ${_students.length} ${l.S.of(context).entries}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
-                              ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
-                            ),
-                          ),
+                        : _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _students.isEmpty
+                                ? SizedBox(
+                                    width: constraints.maxWidth,
+                                    height: 300,
+                                    child: _buildNoStudentsMessage(context),
+                                  )
+                                : SingleChildScrollView(
+                                    controller: _scrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
+                                      ),
+                                      child: userListDataTable(context),
+                                    ),
+                                  ),
 
                     //______________________________________________________________________footer__________________
                     isTablet || isMobile
@@ -530,6 +571,109 @@ class _StudentListViewState extends State<StudentListView> {
             );
           },
         ).toList(),
+      ),
+    );
+  }
+
+  ElevatedButton uploadCsvButton(TextTheme textTheme) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      ),
+      onPressed: _uploadCsvFile,
+      label: Text(
+        'Upload CSV',
+        style: textTheme.bodySmall?.copyWith(
+          color: AcnooAppColors.kWhiteColor,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      iconAlignment: IconAlignment.start,
+      icon: const Icon(
+        Icons.upload_file,
+        color: AcnooAppColors.kWhiteColor,
+        size: 20.0,
+      ),
+    );
+  }
+
+  Future<void> _uploadCsvFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        final input = file.readAsStringSync();
+        final fields = const CsvToListConverter().convert(input);
+
+        // Skip header row
+        for (var i = 1; i < fields.length; i++) {
+          final row = fields[i];
+          try {
+            // final studentData = {
+            //   "fullName": row[0],
+            //   "email": row[1],
+            //   "rollNo": row[2],
+            //   "phoneNumber": row[3].toString(),
+            //   "dateOfBirth": row[4],
+            //   "gender": row[5],
+            //   "class": row[6], // Assuming this is the class ID
+            //   "password": "defaultPassword123" // You might want to generate this
+            // };
+
+            //await _studentService.createStudent(StudentCreate.fromJson(studentData), token);
+          } catch (e) {
+            print('Error processing row $i: $e');
+          }
+        }
+
+        // Refresh the student list after upload
+        //await _fetchStudents(_currentPage + 1);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Students uploaded successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to process CSV file: $e')),
+      );
+    }
+  }
+
+  Widget _buildNoStudentsMessage(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Students Added Yet',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add your first student to get started',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

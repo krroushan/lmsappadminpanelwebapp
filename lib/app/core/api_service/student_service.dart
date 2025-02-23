@@ -4,6 +4,11 @@ import 'package:http/http.dart' as http;
 import '../../models/student/student_all_response.dart';
 import '../../models/student/student_create.dart';
 import '../../models/student/student.dart';
+import 'dart:typed_data';
+import 'package:http_parser/http_parser.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 class StudentService {
   // Get all students with pagination
@@ -107,6 +112,67 @@ class StudentService {
       throw Exception(errorResponse['message'] ?? 'Failed to update student');
     }
   }
+
+// Upload a student image
+  Future<String> uploadStudentImage(
+    Uint8List imageBytes, 
+    String imageName, 
+    String fullName,
+    String prevStudentImage,  
+    String token
+  ) async {
+    // Determine MIME type based on the file extension
+    String mimeType;
+    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (imageName.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (imageName.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    } else {
+      throw Exception('Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/student/upload-image')
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    
+    // Add the form fields
+    request.fields['fullName'] = fullName;
+    request.fields['prevStudentImage'] = prevStudentImage;
+
+    // Add the image file to the request
+    request.files.add(http.MultipartFile.fromBytes(
+      'studentImage',
+      imageBytes,
+      filename: imageName,
+      contentType: MediaType.parse(mimeType),
+    ));
+
+    var response = await request.send();
+    var responseBody = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+      if (jsonResponse['success']) {
+        logger.i('Student image uploaded successfully');
+        return jsonResponse['studentImage'];
+      } else {
+        logger.e('Failed to upload student image');
+        throw Exception('Failed to upload student image');
+      }
+    } else {
+      logger.e('Failed to upload student image: ${responseBody.body}');
+      throw Exception('Failed to upload student image: ${jsonDecode(responseBody.body)['message']}');
+    }
+  }
+
+
+
+
 }
 
-
+  

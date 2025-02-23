@@ -87,9 +87,16 @@ class _LectureVideoPlayer2State extends State<LectureVideoPlayer2> {
     }
 
     try {
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse('https://api.ramaanya.com/uploads/lectures/videos/$videoUrl')
-      );
+      VideoPlayerController controller;
+      if (videoUrl.contains('amazon')) {
+        controller = VideoPlayerController.networkUrl(
+          Uri.parse(videoUrl)
+        );
+      } else {
+        controller = VideoPlayerController.networkUrl(
+          Uri.parse('https://api.ramaanya.com/uploads/lectures/videos/$videoUrl')
+        );
+      }
 
       await controller.initialize();
       

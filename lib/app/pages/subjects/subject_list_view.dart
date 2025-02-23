@@ -223,41 +223,48 @@ class _SubjectListViewState extends State<SubjectListView> {
                           ),
 
                     //______________________________________________________________________Data_table__________________
-                    isMobile || isTablet
-                        ? RawScrollbar(
-                            padding: const EdgeInsets.only(left: 18),
-                            trackBorderColor: theme.colorScheme.surface,
-                            trackVisibility: true,
-                            scrollbarOrientation: ScrollbarOrientation.bottom,
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            thickness: 8.0,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: userListDataTable(context),
+                    Padding(
+                      padding: _sizeInfo.padding,
+                      child: _isLoading 
+                        ? const Center(child: CircularProgressIndicator())
+                        : _subjects.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.book_outlined,
+                                    size: 64,
+                                    color: Colors.grey,
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No subjects found',
+                                    style: textTheme.titleMedium?.copyWith(color: Colors.grey),
+                                  ),
+                                ],
                               ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
+                            )
+                          : GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isMobile ? 1 : isTablet ? 2 : 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 3,
+                              ),
+                              itemCount: _subjects.length,
+                              itemBuilder: (context, index) {
+                                final subject = _subjects[index];
+                                return SubjectCard(
+                                  subject: subject,
+                                  onEdit: () => context.go('/dashboard/subjects/edit-subject/${subject.id}'),
+                                  onDelete: () => _deleteSubject(subject.id, token),
+                                );
+                              },
                             ),
-                          ),
+                    ),
 
                   ],
                 );
@@ -324,15 +331,29 @@ class _SubjectListViewState extends State<SubjectListView> {
   }
 
   ///_______________________________________________________________User_List_Data_Table___________________________
-  Theme userListDataTable(BuildContext context) {
+  Widget userListDataTable(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+
+    if (_subjects.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            'No subjects found',
+            style: textTheme.titleMedium,
+          ),
+        ),
+      );
+    }
+
     return Theme(
       data: ThemeData(
-          dividerColor: theme.colorScheme.outline,
-          dividerTheme: DividerThemeData(
-            color: theme.colorScheme.outline,
-          )),
+        dividerColor: theme.colorScheme.outline,
+        dividerTheme: DividerThemeData(
+          color: theme.colorScheme.outline,
+        )
+      ),
       child: DataTable(
         checkboxHorizontalMargin: 16,
         dataRowMaxHeight: 70,
@@ -419,4 +440,98 @@ class _SizeInfo {
     this.padding = const EdgeInsets.all(24),
     this.innerSpacing = 24,
   });
+}
+
+class SubjectCard extends StatelessWidget {
+  final Subject subject;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const SubjectCard({
+    super.key,
+    required this.subject,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AcnooAppColors.kWhiteColor,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                '${ApiConfig.subjectImageUrl}${subject.subjectImage}',
+                height: double.infinity,
+                width: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: double.infinity,
+                  width: 80,
+                  decoration: BoxDecoration(
+                    color: AcnooAppColors.kPrimary100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.image_not_supported, size: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subject.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AcnooAppColors.kSuccess.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      subject.classInfo.name ?? 'No Class',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AcnooAppColors.kSuccess,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo),
+                  onPressed: onEdit,
+                  tooltip: 'Edit Subject',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: AcnooAppColors.kError),
+                  onPressed: onDelete,
+                  tooltip: 'Delete Subject',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

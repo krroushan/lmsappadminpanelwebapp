@@ -101,17 +101,15 @@ class _TeacherListViewState extends State<TeacherListView> {
       _isLoading = true;
     });
     try {
-      List<Teacher> response = await _teacherService.fetchAllTeachers(token); // Fetch the response
-      print("response: ${response[0].fullName}");
+      List<Teacher> response = await _teacherService.fetchAllTeachers(token);
       setState(() {
-          _teachers = response;
+        _teachers = response;
         _totalTeachers = response.length;
         _isLoading = false;
       });
-      
-        print("ateacher: ${_teachers.length}");
     } catch (e) {
       setState(() {
+        _teachers = []; // Ensure teachers is empty on error
         _isLoading = false;
       });
       print(e);
@@ -236,7 +234,14 @@ class _TeacherListViewState extends State<TeacherListView> {
                                     constraints: BoxConstraints(
                                       minWidth: constraints.maxWidth,
                                     ),
-                                    child: userListDataTable(context),
+                                    child: _isLoading 
+                                      ? const Center(child: CircularProgressIndicator())
+                                      : _teachers.isEmpty 
+                                        ? SizedBox(
+                                            width: constraints.maxWidth,
+                                            child: _buildNoTeachersMessage(context)
+                                          )
+                                        : userListDataTable(context),
                                   ),
                                 ),
                               ],
@@ -245,12 +250,23 @@ class _TeacherListViewState extends State<TeacherListView> {
                         : SingleChildScrollView(
                             controller: _scrollController,
                             scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
-                              ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
-                            ),
+                            child: _isLoading 
+                              ? const Center(child: CircularProgressIndicator())
+                              : _teachers.isEmpty 
+                                ? Container(
+                                    width: constraints.maxWidth,
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                      minHeight: 200,
+                                    ),
+                                    child: _buildNoTeachersMessage(context),
+                                  )
+                                : ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: userListDataTable(context),
+                                  ),
                           ),
 
                   ],
@@ -368,6 +384,41 @@ class _TeacherListViewState extends State<TeacherListView> {
             );
           },
         ).toList(),
+      ),
+    );
+  }
+
+  // Add this new method
+  Widget _buildNoTeachersMessage(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_off_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Teachers Added Yet',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Click the "Add New Teacher" button to add your first teacher',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -38,12 +38,65 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
 
   int _unreadMessages = 0;
 
+  bool _isInitializing = true;
+  String _setupStatus = 'Initializing...';
+
   @override
   void initState() {
     super.initState();
     streamId = widget.streamId;
-    initRenderers();
-    _setupStream();
+    _initializeStream();
+  }
+
+  Future<void> _initializeStream() async {
+    try {
+      _updateStatus('Checking permissions...');
+      await _checkPermissions();
+      
+      _updateStatus('Initializing video renderer...');
+      await initRenderers();
+      
+      _updateStatus('Setting up stream...');
+      _setupStream();
+      
+      setState(() => _isInitializing = false);
+    } catch (e) {
+      setState(() {
+        _isInitializing = false;
+        _setupStatus = 'Setup failed: $e';
+      });
+      _showErrorDialog('Stream Setup Failed', 'Error: $e');
+    }
+  }
+
+  Future<void> _checkPermissions() async {
+    final camera = await Permission.camera.request();
+    final microphone = await Permission.microphone.request();
+    
+    if (camera.isDenied || microphone.isDenied) {
+      throw 'Camera and microphone permissions are required';
+    }
+  }
+
+  void _updateStatus(String status) {
+    setState(() => _setupStatus = status);
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   initRenderers() async {
@@ -82,15 +135,26 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
   void _onStateChange(HelperState state) {
     switch (state) {
       case HelperState.CallStateNew:
-        setState(() => _isStreaming = true);
+        setState(() {
+          _isStreaming = true;
+          _setupStatus = 'Stream started successfully';
+        });
+        break;
+      case HelperState.ConnectionOpen:
+        _updateStatus('Connecting to stream...');
+        break;
+      case HelperState.ConnectionClosed:
+        _updateStatus('Connection closed');
         break;
       case HelperState.CallStateBye:
         setState(() {
           _isStreaming = false;
           _localRenderer.srcObject = null;
+          _setupStatus = 'Stream ended';
         });
         break;
-      default:
+      case HelperState.ConnectionError:
+        _updateStatus('Connection error');
         break;
     }
   }
@@ -161,6 +225,35 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(
+                  _setupStatus,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -317,42 +410,42 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
               right: 16,
               bottom: 100,
               child: Card(
-                elevation: 8,
+                elevation: 12,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                color: Colors.black87,
+                color: Colors.black.withOpacity(0.85),
                 child: SizedBox(
-                  width: 320,
-                  height: 450,
+                  width: 350,
+                  height: 500,
                   child: Column(
                     children: [
                       // Chat header with updated styling
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          color: Colors.blue.shade900,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.chat, color: Colors.white, size: 20),
-                                const SizedBox(width: 8),
+                                const Icon(Icons.chat, color: Colors.white, size: 24),
+                                const SizedBox(width: 12),
                                 const Text(
                                   'Live Chat',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 18,
                                   ),
                                 ),
                               ],
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white70),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 24),
                               onPressed: _toggleChat,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -364,38 +457,45 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
                       Expanded(
                         child: ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           itemCount: _messages.length,
                           itemBuilder: (context, index) {
                             final message = _messages[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.symmetric(vertical: 6),
                               child: Align(
                                 alignment: message['isReceived'] 
                                     ? Alignment.centerLeft 
                                     : Alignment.centerRight,
                                 child: Container(
                                   constraints: BoxConstraints(
-                                    maxWidth: MediaQuery.of(context).size.width * 0.6,
+                                    maxWidth: MediaQuery.of(context).size.width * 0.65,
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                    horizontal: 16,
+                                    vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
                                     color: message['isReceived']
-                                        ? Colors.white.withOpacity(0.1)
+                                        ? Colors.white.withOpacity(0.15)
                                         : Colors.blue.shade700,
-                                    borderRadius: BorderRadius.circular(16).copyWith(
-                                      bottomRight: message['isReceived'] ? Radius.circular(16) : Radius.circular(4),
-                                      bottomLeft: message['isReceived'] ? Radius.circular(4) : Radius.circular(16),
+                                    borderRadius: BorderRadius.circular(20).copyWith(
+                                      bottomRight: message['isReceived'] ? Radius.circular(20) : Radius.circular(6),
+                                      bottomLeft: message['isReceived'] ? Radius.circular(6) : Radius.circular(20),
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
                                   child: Text(
                                     message['message'],
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 14,
+                                      fontSize: 15,
                                     ),
                                   ),
                                 ),
@@ -406,41 +506,48 @@ class _PublishLiveStreamState extends State<PublishLiveStream> {
                       ),
                       // Message input with improved styling
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                          color: Colors.blue.shade900.withOpacity(0.8),
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                         ),
                         child: Row(
                           children: [
                             Expanded(
                               child: TextField(
                                 controller: _messageController,
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white, fontSize: 16),
                                 decoration: InputDecoration(
                                   hintText: 'Type a message...',
-                                  hintStyle: TextStyle(color: Colors.white60),
+                                  hintStyle: TextStyle(color: Colors.white70),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
                                     borderSide: BorderSide.none,
                                   ),
-                                  fillColor: Colors.white12,
+                                  fillColor: Colors.white.withOpacity(0.1),
                                   filled: true,
                                   contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
+                                    horizontal: 20,
+                                    vertical: 12,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 12),
                             Container(
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.blue,
+                                color: Colors.blue.shade600,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: IconButton(
-                                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                                icon: const Icon(Icons.send, color: Colors.white, size: 22),
                                 onPressed: _sendMessage,
                               ),
                             ),

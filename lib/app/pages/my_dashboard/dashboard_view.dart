@@ -1,6 +1,6 @@
 // 🐦 Flutter imports:
 import 'package:flutter/material.dart';
-
+import 'package:go_router/go_router.dart';
 // 📦 Package imports:
 import 'package:responsive_grid/responsive_grid.dart';
 
@@ -195,17 +195,23 @@ class _DashboardViewState extends State<DashboardView> {
                         _QuickActionButton(
                           icon: Icons.video_camera_front,
                           label: 'Start Live Class',
-                          onTap: () {},
+                          onTap: () {
+                            context.go('/dashboard/live-class');
+                          },
                         ),
                         _QuickActionButton(
                           icon: Icons.assignment,
                           label: 'Create Assignment',
-                          onTap: () {},
+                          onTap: () {
+                            context.go('/dashboard/assignment');
+                          },
                         ),
                         _QuickActionButton(
                           icon: Icons.calendar_today,
                           label: 'Schedule Exam',
-                          onTap: () {},
+                          onTap: () {
+                            context.go('/dashboard/exam');
+                          },
                         ),
                         _QuickActionButton(
                           icon: Icons.upload_file,

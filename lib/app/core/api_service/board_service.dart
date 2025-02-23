@@ -10,6 +10,8 @@ import 'package:logger/logger.dart';
 class BoardService {
   var logger = Logger();
 
+  
+
   Future<List<Board>> fetchAllBoards(String token) async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/board/all'),
@@ -39,48 +41,34 @@ class BoardService {
   }
 
   // Method to create a new board
-  Future<CreateBoardResponse> createBoard(String boardName, String boardDescription, Uint8List imageBytes, String imageName, String token) async {
-    // Determine MIME type based on the file extension
-    String mimeType;
-    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (imageName.endsWith('.png')) {
-      mimeType = 'image/png';
-    } else if (imageName.endsWith('.webp')) {
-      mimeType = 'image/webp';
-    } else {
-      return CreateBoardResponse(success: false, message: 'Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
-    }
-    
-    // Implement the API call to upload the board info and image
-    var request = http.MultipartRequest(
-      'POST', 
-      Uri.parse('${ApiConfig.baseUrl}/board/create')
+  Future<CreateBoardResponse> createBoard(
+    String boardName, 
+    String boardDescription, 
+    String boardImageUrl,
+    String token
+  ) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/board/create'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': boardName,
+        'description': boardDescription,
+        'boardImage': boardImageUrl,
+      }),
     );
-    
-    request.headers['Authorization'] = 'Bearer $token';
 
-    request.fields['name'] = boardName;
-    request.fields['description'] = boardDescription;
-
-    // Add the image file to the request
-    request.files.add(http.MultipartFile.fromBytes(
-      'boardImage',
-      imageBytes,
-      filename: imageName,
-      contentType: MediaType.parse(mimeType),
-    ));
-
-    var response = await request.send();
-    var responseBody = await http.Response.fromStream(response);
-    
-    // Check the response status
     if (response.statusCode == 201) {
       logger.i('Board created successfully');
       return CreateBoardResponse(success: true, message: 'Board created successfully');
     } else {
-      logger.e('Failed: ${responseBody.body}');
-      return CreateBoardResponse(success: false, message: jsonDecode(responseBody.body)['message']);
+      logger.e('Failed: ${response.body}');
+      return CreateBoardResponse(
+        success: false, 
+        message: jsonDecode(response.body)['message']
+      );
     }
   }
 
@@ -103,6 +91,122 @@ Future<void> deleteBoard(String boardId, String token) async {
     } else {
       logger.e('Failed to delete board');
       throw Exception('Failed to delete board');
+    }
+  }
+
+  Future<String> uploadBoardImage(
+    Uint8List imageBytes, 
+    String imageName, 
+    String name,
+    String prevBoardImage,  
+    String token
+  ) async {
+    // Determine MIME type based on the file extension
+    String mimeType;
+    if (imageName.endsWith('.jpg') || imageName.endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (imageName.endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (imageName.endsWith('.webp')) {
+      mimeType = 'image/webp';
+    } else {
+      throw Exception('Unsupported file format. Only JPG, PNG, and WEBP are allowed.');
+    }
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/board/upload-image')
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    
+    // Add the previous board image name if it exists
+    request.fields['name'] = name;
+    request.fields['prevBoardImage'] = prevBoardImage;
+
+    // Add the image file to the request
+    request.files.add(http.MultipartFile.fromBytes(
+      'boardImage',
+      imageBytes,
+      filename: imageName,
+      contentType: MediaType.parse(mimeType),
+    ));
+
+    var response = await request.send();
+    var responseBody = await http.Response.fromStream(response);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+      if (jsonResponse['success']) {
+        logger.i('Board image uploaded successfully');
+        return jsonResponse['boardImage'];
+      } else {
+        logger.e('Failed to upload board image');
+        throw Exception('Failed to upload board image');
+      }
+    } else {
+      logger.e('Failed to upload board image: ${responseBody.body}');
+      throw Exception('Failed to upload board image: ${jsonDecode(responseBody.body)['message']}');
+    }
+  }
+
+  // Add method to get board by ID
+  Future<Map<String, dynamic>> getBoardById(String boardId, String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/board/$boardId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success']) {
+        logger.i('Board fetched successfully');
+        return {
+          'success': true,
+          'data': jsonResponse['boardItem']
+        };
+      } else {
+        logger.e('Failed to fetch board');
+        throw Exception(jsonResponse['message'] ?? 'Failed to fetch board');
+      }
+    } else {
+      logger.e('Failed to fetch board: ${response.statusCode}');
+      throw Exception('Failed to fetch board: ${response.statusCode}');
+    }
+  }
+
+  // Add method to update board
+  Future<CreateBoardResponse> updateBoard(
+    String boardId,
+    String boardName,
+    String boardDescription,
+    String boardImageUrl,
+    String token
+  ) async {
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/board/$boardId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': boardName,
+        'description': boardDescription,
+        'boardImage': boardImageUrl,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      logger.i('Board updated successfully');
+      return CreateBoardResponse(success: true, message: 'Board updated successfully');
+    } else {
+      logger.e('Failed to update board: ${response.body}');
+      return CreateBoardResponse(
+        success: false,
+        message: jsonDecode(response.body)['message'] ?? 'Failed to update board'
+      );
     }
   }
 }

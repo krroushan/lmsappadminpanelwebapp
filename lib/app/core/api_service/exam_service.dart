@@ -36,18 +36,18 @@ class ExamService {
   }
 
   // Update an existing exam
-  Future<Exam> updateExam(String id, Exam exam, String token) async {
+  Future<void> updateExam(String id, Map<String, dynamic> exam, String token) async {
     final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/exam/update/$id'),
+      Uri.parse('${ApiConfig.baseUrl}/exam/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token', 
       },
-      body: json.encode(exam.toJson()),
+      body: json.encode(exam),
     );
 
     if (response.statusCode == 200) {
-      return Exam.fromJson(json.decode(response.body));
+      return;
     } else {
       throw Exception('Failed to update exam');
     }

@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // 🌎 Project imports:
+import '../pages/assignments/add_assignment_view.dart';
+import '../pages/assignments/assignment_list_view.dart';
+import '../pages/boards/edit_board_view.dart';
 import '../pages/classes_page/edit_class_view.dart';
 import '../pages/exams/add_question_to_exam_view.dart';
 import '../pages/exams/add_question_view.dart';
 import '../pages/exams/question_list_view.dart';
+import '../pages/fees/add_fees_view.dart';
+import '../pages/fees/all_fees_list_view.dart';
+import '../pages/fees/all_payment_history_list_view.dart';
 import '../pages/pages.dart';
 import '../pages/classes_page/classes_list_view.dart';
 import '../pages/classes_page/add_class_view.dart';
@@ -51,6 +57,8 @@ import '../pages/settings/app_setting_view.dart';
 import '../pages/settings/page_setting_view.dart';
 import '../pages/lectures/edit_lecture_view.dart';
 import '../pages/schedule/edit_schedule_view.dart';
+import '../pages/exams/edit_exam_view.dart';
+
 abstract class AcnooAppRoutes {
   //--------------Navigator Keys--------------//
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -282,6 +290,38 @@ GoRoute(
                   child: AddQuestionToExamView(examId: state.pathParameters['examId'] ?? ''),
                 ),
               ),
+              GoRoute(
+                path: 'edit/:examId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditExamView(examId: state.pathParameters['examId'] ?? ''),
+                ),
+              ),
+            ],
+          ),
+
+// Assignments Route
+          GoRoute(
+            path: '/dashboard/assignments',
+            redirect: (context, state) async {
+              if (state.fullPath == '/dashboard/assignments') {
+                return '/dashboard/assignments/all-assignments';
+              }
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: 'all-assignments',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AssignmentListView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-assignment',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AddAssignmentView(),
+                ),
+              ),
+   
             ],
           ),
 
@@ -531,6 +571,12 @@ GoRoute(
                   child: AddBoardView(),
                 ),
               ),
+              GoRoute(
+                path: 'edit-board/:boardId',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  child: EditBoardView(boardId: state.pathParameters['boardId'] ?? ''),
+                ),
+              ),
             ],
           ),
 
@@ -571,6 +617,40 @@ GoRoute(
               ),
             ],
           ),
+
+
+          // Fees Route
+          GoRoute(
+            path: '/dashboard/fees',
+            redirect: (context, state) async {
+              if (state.fullPath == '/dashboard/fees') {
+                return '/dashboard/fees/all-fees';
+              }
+              return null;
+            },
+            routes: [
+              GoRoute(
+                path: 'all-fees',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AllFeesListView(),
+                ),
+              ),
+              GoRoute(
+                path: 'add-fee',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AddFeesView(),
+                ),
+              ),
+              GoRoute(
+                path: 'payment-history',
+                pageBuilder: (context, state) => const NoTransitionPage<void>(
+                  child: AllPaymentHistoryListView(),
+                ),
+              ),
+
+            ],
+          ),
+
 
 
 GoRoute(

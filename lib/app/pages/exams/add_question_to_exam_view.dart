@@ -85,16 +85,27 @@ class _AddQuestionToExamViewState extends State<AddQuestionToExamView> {
 
   // Update _paginatedQuestions getter
   List<GetQuestion> get _paginatedQuestions {
+    // First, filter questions based on search query
+    final searchTerm = _searchController.text.toLowerCase().trim();
+    final filteredQuestions = searchTerm.isEmpty 
+        ? _questions 
+        : _questions.where((question) {
+            return question.questionText.toLowerCase().contains(searchTerm) ||
+                   question.subject.name.toLowerCase().contains(searchTerm) ||
+                   question.classInfo.name.toLowerCase().contains(searchTerm) ||
+                   question.board.name.toLowerCase().contains(searchTerm) ||
+                   question.questionType.toLowerCase().contains(searchTerm);
+          }).toList();
+
+    // Then apply pagination
     final startIndex = _currentPage * _rowsPerPage;
     final endIndex = startIndex + _rowsPerPage;
-    return _questions.where((question) {
-      final searchTerm = _searchController.text.toLowerCase();
-      return question.questionText.toLowerCase().contains(searchTerm) ||
-             question.subject.name.toLowerCase().contains(searchTerm) ||
-             question.classInfo.name.toLowerCase().contains(searchTerm);
-    }).toList().sublist(
+    
+    if (filteredQuestions.isEmpty) return [];
+    
+    return filteredQuestions.sublist(
       startIndex,
-      endIndex > _questions.length ? _questions.length : endIndex,
+      endIndex > filteredQuestions.length ? filteredQuestions.length : endIndex,
     );
   }
 

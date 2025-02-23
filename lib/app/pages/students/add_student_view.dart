@@ -12,6 +12,8 @@ import 'package:iconly/iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:responsive_framework/responsive_framework.dart' as rf;
 import 'package:responsive_grid/responsive_grid.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 // 🌎 Project imports:
 import '../../core/helpers/field_styles/field_styles.dart';
@@ -71,6 +73,15 @@ class _AddStudentViewState extends State<AddStudentView> {
 
   // Add this property
   bool _isLoading = false;
+
+  // Add these new properties for image handling
+  PlatformFile? selectedImage;
+  String? selectedImagePath;
+  Uint8List? selectedImageBytes;
+  String? mimeType;
+  int? imageSize;
+  String? uploadedImageUrl;
+  bool _isImageUploading = false;
 
   @override
   void dispose() {
@@ -391,27 +402,73 @@ class _AddStudentViewState extends State<AddStudentView> {
 
   // Add this method to handle image selection
   Future<void> _pickImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
-      );
-      
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _selectedImage = bytes;
-        });
-      }
-    } catch (e) {
-      print('Error picking image: $e');
+    // Check if student name is empty
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to pick image'),
+          content: Text('Please enter student name before uploading an image'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+
+    setState(() => _isImageUploading = true);
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+
+      if (result == null) {
+        return;
+      }
+
+      setState(() {
+        selectedImage = result.files.first;
+        mimeType = selectedImage!.extension != null
+                ? 'image/${selectedImage!.extension}'
+                : 'unknown';
+        imageSize = selectedImage!.size;
+      });
+
+      // Start uploading immediately after image is selected
+      if (selectedImage != null && selectedImage!.bytes != null) {
+        try {
+          final imageResponse = await _studentService.uploadStudentImage(
+            selectedImage!.bytes!,
+            selectedImage!.name,
+            _nameController.text,
+            '', // empty string for new student
+            token
+          );
+          setState(() {
+            uploadedImageUrl = imageResponse;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Image uploaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error uploading image: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isImageUploading = false);
     }
   }
 
@@ -901,7 +958,7 @@ class _AddStudentViewState extends State<AddStudentView> {
                     : () {
                         if (browserDefaultFormKey.currentState?.validate() == true) {
                           // Additional validation before submission
-                          if (_selectedImage == null) {
+                          if (selectedImage == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Please upload a student photo'),

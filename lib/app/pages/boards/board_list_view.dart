@@ -223,42 +223,37 @@ class _BoardListViewState extends State<BoardListView> {
                           ),
 
                     //______________________________________________________________________Data_table__________________
-                    isMobile || isTablet
-                        ? RawScrollbar(
-                            padding: const EdgeInsets.only(left: 18),
-                            trackBorderColor: theme.colorScheme.surface,
-                            trackVisibility: true,
-                            scrollbarOrientation: ScrollbarOrientation.bottom,
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            thickness: 8.0,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SingleChildScrollView(
-                                  controller: _scrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: userListDataTable(context),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
+                    Padding(
+                      padding: _sizeInfo.padding,
+                      child: _isLoading 
+                        ? const Center(child: CircularProgressIndicator())
+                        : _boards.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No boards found',
+                                style: textTheme.titleMedium?.copyWith(color: AcnooAppColors.kDark3),
                               ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
+                            )
+                          : GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isMobile ? 1 : isTablet ? 2 : 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 3,
+                              ),
+                              itemCount: _boards.length,
+                              itemBuilder: (context, index) {
+                                final board = _boards[index];
+                                return BoardCard(
+                                  board: board,
+                                  onEdit: () => context.go('/dashboard/boards/edit-board/${board.id}'),
+                                  onDelete: () => _deleteBoard(board.id, token),
+                                );
+                              },
                             ),
-                          ),
-
+                    ),
                   ],
                 );
               },
@@ -322,71 +317,6 @@ class _BoardListViewState extends State<BoardListView> {
       },
     );
   }
-
-  ///_______________________________________________________________User_List_Data_Table___________________________
-  Theme userListDataTable(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    return Theme(
-      data: ThemeData(
-          dividerColor: theme.colorScheme.outline,
-          dividerTheme: DividerThemeData(
-            color: theme.colorScheme.outline,
-          )),
-      child: DataTable(
-        checkboxHorizontalMargin: 16,
-        dataRowMaxHeight: 70,
-        headingTextStyle: textTheme.titleMedium,
-        dataTextStyle: textTheme.bodySmall,
-        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-        showBottomBorder: true,
-        columns: const [
-          DataColumn(label: Text('SN.')),
-          DataColumn(label: Text('Image')),
-          DataColumn(label: Text('Name')),
-          // DataColumn(label: Text('Description')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: _boards.asMap().entries.map(
-          (entry) {
-            final index = entry.key + 1;
-            final boardInfo = entry.value;
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(
-                  ClipOval(
-                    child: Image.network(
-                      'https://api.ramaanya.com/uploads/boards/bseb.png', 
-                      width: 50, 
-                      height: 50, 
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                DataCell(Text(boardInfo.name)),
-                DataCell(
-                  Row(
-                    children: [
-                      // IconButton(onPressed: () {
-                      //   context.go('/dashboard/boards/board-profile', extra: boardInfo.id);
-                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                      IconButton(onPressed: () {
-                        context.go('/dashboard/boards/edit-board/${boardInfo.id}');
-                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-                      IconButton(onPressed: () async {
-                          await _deleteBoard(boardInfo.id, token);
-                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ).toList(),
-      ),
-    );
-  }
 }
 
 class _SizeInfo {
@@ -398,4 +328,91 @@ class _SizeInfo {
     this.padding = const EdgeInsets.all(24),
     this.innerSpacing = 24,
   });
+}
+
+class BoardCard extends StatelessWidget {
+  final Board board;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const BoardCard({
+    super.key,
+    required this.board,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AcnooAppColors.kWhiteColor,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.network(
+                'https://api.ramaanya.com/uploads/boards/${board.boardImage}',
+                height: 60,
+                width: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    color: AcnooAppColors.kPrimary100,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Icon(Icons.image_not_supported, size: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    board.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    board.description ?? 'No description',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo),
+                  onPressed: onEdit,
+                  tooltip: 'Edit Board',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: AcnooAppColors.kError),
+                  onPressed: onDelete,
+                  tooltip: 'Delete Board',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

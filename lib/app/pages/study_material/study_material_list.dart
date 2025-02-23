@@ -329,7 +329,33 @@ class _StudyMaterialListViewState extends State<StudyMaterialListView> {
             color: theme.colorScheme.outline,
           )),
       child: _studyMaterials.isEmpty
-          ? Center(child: Text('No study materials available.'))
+          ? Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.note_alt_outlined,
+                      size: 48,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Study Materials Available',
+                      style: textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Click on "Add New Study Material" to create one',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : DataTable(
               checkboxHorizontalMargin: 16,
               dataRowMaxHeight: 70,

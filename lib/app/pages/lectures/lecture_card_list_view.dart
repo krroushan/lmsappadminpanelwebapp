@@ -121,6 +121,39 @@ class _LectureCardListViewState extends State<LectureCardListView> {
     _fetchLectures();
   }
 
+  Widget _buildNoLecturesMessage(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.video_library_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Lectures Added Yet',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add your first lecture to get started',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,12 +221,12 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                 children: _isLoading 
                   ? <ResponsiveGridCol>[
                       ResponsiveGridCol(
-                        lg: 12, // Full width
+                        lg: 12,
                         md: 12,
                         sm: 12,
                         xs: 12,
                         child: Container(
-                          height: 200, // Provide some height for the loading container
+                          height: 200,
                           child: Center(
                             child: CircularProgressIndicator(
                               color: _theme.primaryColor,
@@ -202,36 +235,46 @@ class _LectureCardListViewState extends State<LectureCardListView> {
                         ),
                       ),
                     ]
-                  : _lectures.asMap().entries.map(
-                      (entry) => ResponsiveGridCol(
-                        lg: 3,
-                        md: 4,
-                        sm: 12,
-                        xs: 12,
-                        child: Padding(
-                          padding: _sizeInfo.padding / 2.5,
-                          child: BlogCardWidget(
-                            title: entry.value.title,
-                            description: entry.value.description,
-                            cardWidgetType: BlogCardWidgetType.contentBL,
-                            image: NetworkImage('https://api.ramaanya.com/uploads/lectures/thumbnails/${entry.value.thumbnail}'),
-                            isLoading: false,
-                            lectureId: entry.value.id,
-                            createdBy: entry.value.teacher?.fullName ?? '',
-                            createdDate: entry.value.createdAt,
-                            board: entry.value.board?.name ?? '',
-                            className: entry.value.classInfo?.name ?? '',
-                            subject: entry.value.subject?.name ?? '',
-                            lectureType: entry.value.lectureType,
-                            streamId: entry.value.streamId,
-                            recordingUrl: entry.value.recordingUrl,
-                            onDelete: _deleteLecture, errorBuilder: (context, error, stackTrace) { 
-                              return Image.asset('assets/images/no_image.png');
-                            },
+                  : _lectures.isEmpty
+                    ? <ResponsiveGridCol>[
+                        ResponsiveGridCol(
+                          lg: 12,
+                          md: 12,
+                          sm: 12,
+                          xs: 12,
+                          child: _buildNoLecturesMessage(context),
+                        ),
+                      ]
+                    : _lectures.asMap().entries.map(
+                        (entry) => ResponsiveGridCol(
+                          lg: 3,
+                          md: 4,
+                          sm: 12,
+                          xs: 12,
+                          child: Padding(
+                            padding: _sizeInfo.padding / 2.5,
+                            child: BlogCardWidget(
+                              title: entry.value.title,
+                              description: entry.value.description,
+                              cardWidgetType: BlogCardWidgetType.contentBL,
+                              image: NetworkImage('https://api.ramaanya.com/uploads/lectures/thumbnails/${entry.value.thumbnail}'),
+                              isLoading: false,
+                              lectureId: entry.value.id,
+                              createdBy: entry.value.teacher?.fullName ?? '',
+                              createdDate: entry.value.createdAt,
+                              board: entry.value.board?.name ?? '',
+                              className: entry.value.classInfo?.name ?? '',
+                              subject: entry.value.subject?.name ?? '',
+                              lectureType: entry.value.lectureType,
+                              streamId: entry.value.streamId,
+                              recordingUrl: entry.value.recordingUrl,
+                              onDelete: _deleteLecture, errorBuilder: (context, error, stackTrace) { 
+                                return Image.asset('assets/images/no_image.png');
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    ).toList(),
+                      ).toList(),
               ),
             ],
           ),

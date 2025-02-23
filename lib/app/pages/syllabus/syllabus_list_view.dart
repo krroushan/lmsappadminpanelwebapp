@@ -242,7 +242,14 @@ class _SyllabusListViewState extends State<SyllabusListView> {
                                     constraints: BoxConstraints(
                                       minWidth: constraints.maxWidth,
                                     ),
-                                    child: userListDataTable(context),
+                                    child: _isLoading 
+                                      ? const Center(child: CircularProgressIndicator())
+                                      : _syllabuses.isEmpty 
+                                        ? SizedBox(
+                                            width: constraints.maxWidth,
+                                            child: _buildNoSyllabusMessage(context)
+                                          )
+                                        : userListDataTable(context),
                                   ),
                                 ),
                               ],
@@ -251,12 +258,23 @@ class _SyllabusListViewState extends State<SyllabusListView> {
                         : SingleChildScrollView(
                             controller: _scrollController,
                             scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth: constraints.maxWidth,
-                              ),
-                              child: _isLoading ? const Center(child: CircularProgressIndicator(),) : userListDataTable(context),
-                            ),
+                            child: _isLoading 
+                              ? const Center(child: CircularProgressIndicator())
+                              : _syllabuses.isEmpty 
+                                ? Container(
+                                    width: constraints.maxWidth,
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                      minHeight: 200,
+                                    ),
+                                    child: _buildNoSyllabusMessage(context),
+                                  )
+                                : ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: userListDataTable(context),
+                                  ),
                           ),
 
                   ],
@@ -328,57 +346,90 @@ class _SyllabusListViewState extends State<SyllabusListView> {
           dividerTheme: DividerThemeData(
             color: theme.colorScheme.outline,
           )),
-      child: _syllabuses.isEmpty
-          ? Center(child: Text('No syllabuses available.'))
-          : DataTable(
-              checkboxHorizontalMargin: 16,
-              dataRowMaxHeight: 70,
-              headingTextStyle: textTheme.titleMedium,
-              dataTextStyle: textTheme.bodySmall,
-              headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
-              showBottomBorder: true,
-              columns: const [
-                DataColumn(label: Text('SN.')),
-                DataColumn(label: Text('Title')),
-                DataColumn(label: Text('Teacher')),
-                DataColumn(label: Text('Subject')),
-                DataColumn(label: Text('Class')),
-                DataColumn(label: Text('Action')),
-              ],
-              rows: _syllabuses.asMap().entries.map(
-                (entry) {
-                  final index = entry.key + 1;
-                  final syllabusInfo = entry.value;
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(index.toString())),
-                      DataCell(Text(syllabusInfo.title)),
-                      DataCell(Text(syllabusInfo.teacher?.fullName ?? '')),
-                      DataCell(Text(syllabusInfo.subject?.name ?? '')),
-                      DataCell(Text(syllabusInfo.classInfo?.name ?? '')),
-                      DataCell(
-                        Row(
-                          children: [
-                            // IconButton(onPressed: () {
-                            //   context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
-                            // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
-                            IconButton(onPressed: () {
-                              context.go('/dashboard/syllabus/edit-syllabus/${syllabusInfo.id}');
-                            }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
-                            IconButton(onPressed: () async {
-                              await _deleteSyllabus(syllabusInfo.id);
-                            }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
-                            IconButton(onPressed: () {
-                              context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
-                            }, icon: const Icon(Icons.file_present, color: AcnooAppColors.kSuccess,)),
-                          ],
-                        ),
-                      ),
+      child: DataTable(
+        checkboxHorizontalMargin: 16,
+        dataRowMaxHeight: 70,
+        headingTextStyle: textTheme.titleMedium,
+        dataTextStyle: textTheme.bodySmall,
+        headingRowColor: WidgetStateProperty.all(theme.colorScheme.surface),
+        showBottomBorder: true,
+        columns: const [
+          DataColumn(label: Text('SN.')),
+          DataColumn(label: Text('Title')),
+          DataColumn(label: Text('Teacher')),
+          DataColumn(label: Text('Subject')),
+          DataColumn(label: Text('Class')),
+          DataColumn(label: Text('Action')),
+        ],
+        rows: _syllabuses.asMap().entries.map(
+          (entry) {
+            final index = entry.key + 1;
+            final syllabusInfo = entry.value;
+            return DataRow(
+              cells: [
+                DataCell(Text(index.toString())),
+                DataCell(Text(syllabusInfo.title)),
+                DataCell(Text(syllabusInfo.teacher?.fullName ?? '')),
+                DataCell(Text(syllabusInfo.subject?.name ?? '')),
+                DataCell(Text(syllabusInfo.classInfo?.name ?? '')),
+                DataCell(
+                  Row(
+                    children: [
+                      // IconButton(onPressed: () {
+                      //   context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
+                      // }, icon: const Icon(Icons.visibility, color: AcnooAppColors.kDark3,)),
+                      IconButton(onPressed: () {
+                        context.go('/dashboard/syllabus/edit-syllabus/${syllabusInfo.id}');
+                      }, icon: const Icon(Icons.edit, color: AcnooAppColors.kInfo,)),
+                      IconButton(onPressed: () async {
+                        await _deleteSyllabus(syllabusInfo.id);
+                      }, icon: const Icon(Icons.delete, color: AcnooAppColors.kError,)),
+                      IconButton(onPressed: () {
+                        context.go('/dashboard/syllabus/view-syllabus/${syllabusInfo.id}');
+                      }, icon: const Icon(Icons.file_present, color: AcnooAppColors.kSuccess,)),
                     ],
-                  );
-                },
-              ).toList(),
+                  ),
+                ),
+              ],
+            );
+          },
+        ).toList(),
+      ),
+    );
+  }
+
+  // Add this new method
+  Widget _buildNoSyllabusMessage(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.book_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary,
             ),
+            const SizedBox(height: 16),
+            Text(
+              'No Syllabus Added Yet',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Click the "Add New Syllabus" button to add your first syllabus',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

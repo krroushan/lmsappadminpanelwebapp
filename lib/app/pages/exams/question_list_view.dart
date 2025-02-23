@@ -61,10 +61,24 @@ class _QuestionListViewState extends State<QuestionListView> {
     }
   }
 
-  void _setSearchQuery(String query) {
-    setState(() {
-      _searchQuery = query;
-    });
+  List<GetQuestion> get _filteredQuestions {
+    if (_searchQuery.isEmpty) return _questions;
+    return _questions.where((question) {
+      final searchTerms = _searchQuery.toLowerCase().split(' ');
+      final questionText = question.questionText.toLowerCase();
+      final boardName = question.board.name.toLowerCase();
+      final subjectName = question.subject.name.toLowerCase();
+      final className = question.classInfo.name.toLowerCase();
+      final questionType = question.questionType.toLowerCase();
+
+      return searchTerms.every((term) =>
+        questionText.contains(term) ||
+        boardName.contains(term) ||
+        subjectName.contains(term) ||
+        className.contains(term) ||
+        questionType.contains(term)
+      );
+    }).toList();
   }
 
   @override
@@ -139,17 +153,35 @@ class _QuestionListViewState extends State<QuestionListView> {
                   child: CircularProgressIndicator(),
                 ),
               )
-            else if (_questions.isEmpty)
+            else if (_filteredQuestions.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.question_mark, size: 48, color: _theme.primaryColor),
+                      Icon(
+                        _searchQuery.isEmpty ? Icons.question_mark_rounded : Icons.search_off,
+                        size: 64,
+                        color: _theme.primaryColor.withOpacity(0.5),
+                      ),
                       const SizedBox(height: 16),
                       Text(
-                        'No questions found',
-                        style: _theme.textTheme.titleMedium,
+                        _searchQuery.isEmpty 
+                          ? 'No questions available'
+                          : 'No questions found for "${_searchQuery}"',
+                        style: _theme.textTheme.titleLarge?.copyWith(
+                          color: _theme.primaryColor.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _searchQuery.isEmpty
+                          ? 'Click the "Add New Question" button to create one'
+                          : 'Try adjusting your search terms',
+                        style: _theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -165,16 +197,6 @@ class _QuestionListViewState extends State<QuestionListView> {
         ),
       ),
     );
-  }
-
-  List<GetQuestion> get _filteredQuestions {
-    if (_searchQuery.isEmpty) return _questions;
-    return _questions.where((question) {
-      return question.questionText.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          question.board.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          question.subject.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          question.classInfo.name.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
   }
 
   Widget _buildQuestionCard(GetQuestion question, ThemeData theme, _SizeInfo sizeInfo) {
@@ -267,9 +289,7 @@ class _QuestionListViewState extends State<QuestionListView> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                      onPressed: () {
-                        // Handle delete
-                      },
+                      onPressed: () => _showDeleteConfirmation(question),
                       tooltip: 'Delete',
                     ),
                   ),
@@ -379,7 +399,7 @@ class _QuestionListViewState extends State<QuestionListView> {
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       ),
       onPressed: () {
-        context.go('/dashboard/questions/add-question');
+        context.go('/dashboard/exams/add-question');
       },
       label: Text(
         'Add New Question',
@@ -403,16 +423,63 @@ class _QuestionListViewState extends State<QuestionListView> {
         isDense: true,
         hintText: '${lang.search}...',
         hintStyle: textTheme.bodySmall,
-        suffixIcon: Container(
-          margin: const EdgeInsets.all(4.0),
-          decoration: BoxDecoration(
-            color: AcnooAppColors.kPrimary700,
-            borderRadius: BorderRadius.circular(6.0),
-          ),
-          child: const Icon(IconlyLight.search, color: AcnooAppColors.kWhiteColor),
+        prefixIcon: const Icon(IconlyLight.search),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
         ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
-      onChanged: _setSearchQuery,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value.trim();
+        });
+      },
+    );
+  }
+
+  Future<void> _deleteQuestion(GetQuestion question) async {
+    try {
+      await _questionService.deleteQuestion(question.id, token);
+      setState(() {
+        _questions.removeWhere((q) => q.id == question.id);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Question deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete question: $e')),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmation(GetQuestion question) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Question'),
+        content: const Text('Are you sure you want to delete this question?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteQuestion(question);
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

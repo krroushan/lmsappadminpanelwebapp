@@ -88,11 +88,11 @@ class _ExamCardState extends State<ExamCard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
-                        onPressed: () => widget.onView(widget.exam.id),
-                        icon: const Icon(Icons.visibility),
-                        color: AcnooAppColors.kDark3,
-                      ),
+                      // IconButton(
+                      //   onPressed: () => widget.onView(widget.exam.id),
+                      //   icon: const Icon(Icons.visibility),
+                      //   color: AcnooAppColors.kDark3,
+                      // ),
                       IconButton(
                         onPressed: () => widget.onEdit(widget.exam),
                         icon: const Icon(Icons.edit),

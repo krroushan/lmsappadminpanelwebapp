@@ -50,6 +50,10 @@ class _EditBoardViewState extends State<EditBoardView> {
   final TextEditingController boardDescriptionController = TextEditingController();
   final TextEditingController boardImageController = TextEditingController();
 
+  // Add new variable to store uploaded image URL
+  String? uploadedImageUrl;
+  String? prevBoardImage; // To store the previous board image URL
+
 Future<void> _pickImage() async {
   FilePickerResult? result = await FilePicker.platform.pickFiles(
     type: FileType.image,
@@ -66,48 +70,106 @@ Future<void> _pickImage() async {
             : 'unknown';
     imageSize = selectedImage!.size;
   });
-  print("selectedImage: ${selectedImage!.name}");
+  
+  // Upload image immediately after picking
+  if (selectedImage != null && selectedImage!.bytes != null) {
+    setState(() => _isLoading = true);
+    try {
+      final boardService = BoardService();
+      final imageResponse = await boardService.uploadBoardImage(
+        selectedImage!.bytes!,
+        selectedImage!.name,
+        boardNameController.text, // Use current board name
+        prevBoardImage ?? '',
+        token
+      );
+      setState(() {
+        uploadedImageUrl = imageResponse;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Image uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 }
 
-// Create Class method
-Future<void> _createBoard(String boardName, String boardDescription) async {
+// Modify _createBoard method to _updateBoard
+Future<void> _updateBoard(String boardName, String boardDescription) async {
   setState(() => _isLoading = true);
   try {
-    // Create an instance of the ClassService
     final boardService = BoardService();
 
-    // Prepare the image data for upload
-    Uint8List? imageBytes = selectedImage?.bytes;
-
-    final response = await boardService.createBoard(
-      boardName, 
-      boardDescription, 
-      imageBytes!, 
-      selectedImage!.name, 
+    // Update board with new or existing image URL
+    final response = await boardService.updateBoard(
+      widget.boardId,
+      boardName,
+      boardDescription,
+      uploadedImageUrl ?? prevBoardImage ?? '', // Use already uploaded URL or keep existing
       token
     );
-    print('response: ${response.message}');
-    // Check if the response is successful
-    if (response.success) {
-      // Handle the successful response (e.g., show a success message)
 
+    if (response.success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Board created successfully', style: TextStyle(color: Colors.green))),
+        const SnackBar(
+          content: Text('Board updated successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
       context.go('/dashboard/boards/all-boards');
     } else {
-      // Handle the case where the response is null or not successful
-      print('Failed to create board1: ${response.message}'); // Log the error message
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(response.message, style: const TextStyle(color: Colors.red))),
+        SnackBar(
+          content: Text(response.message),
+          backgroundColor: Colors.red,
+        ),
       );
     }
-
-    
   } catch (e) {
-    // Catch any errors and display a message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error1: $e')),
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
+// Add method to fetch board details
+Future<void> _fetchBoardDetails() async {
+  setState(() => _isLoading = true);
+  try {
+    final boardService = BoardService();
+    final response = await boardService.getBoardById(widget.boardId, token);
+    
+    if (response['success']) {
+      final boardData = response['data'];
+      setState(() {
+        boardNameController.text = boardData['name'];
+        boardDescriptionController.text = boardData['description'];
+        prevBoardImage = boardData['boardImage'];
+        uploadedImageUrl = boardData['boardImage']; // Store current image URL
+      });
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error fetching board details: $e'),
+        backgroundColor: Colors.red,
+      ),
     );
   } finally {
     setState(() => _isLoading = false);
@@ -120,6 +182,7 @@ void initState() {
   final authProvider = Provider.of<AuthProvider>(context, listen: false);
   authProvider.checkAuthentication();
   token = authProvider.getToken;
+  _fetchBoardDetails(); // Fetch board details when widget initializes
 }
 
   @override
@@ -261,15 +324,12 @@ void initState() {
                           if (browserDefaultFormKey.currentState?.validate() ==
                               true) {
                             browserDefaultFormKey.currentState?.save();
-                            final boardName = boardNameController.text; // Get the board name
-                            final boardDescription = boardDescriptionController.text; // Get the board description
-                            final boardImage = boardImageController.text; // Get the board image
-
-                            // Call the method to create a student
-                              _createBoard(boardName, boardDescription);
+                            final boardName = boardNameController.text;
+                            final boardDescription = boardDescriptionController.text;
+                            _updateBoard(boardName, boardDescription);
                           }
                         },
-                        child: _isLoading ? const CircularProgressIndicator() : const Text('Save Board'),
+                        child: _isLoading ? const CircularProgressIndicator() : const Text('Update Board'),
                       ),
                     ),
                   ),
