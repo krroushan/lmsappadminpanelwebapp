@@ -116,10 +116,10 @@ class _AddQuestionToExamViewState extends State<AddQuestionToExamView> {
       final questions = await _questionService.getQuestionsByFilter(
         classId,
         subjectId,
-        boardId,
         token
       );
       setState(() {
+        print('Questions: ${questions}');
         _questions = questions;
       });
     } catch (e) {

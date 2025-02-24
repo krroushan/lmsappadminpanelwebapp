@@ -231,6 +231,7 @@ class _AddLectureViewState extends State<AddLectureView> {
     // Set teacher ID if user is a teacher
     if (authProvider.getRole == 'teacher') {
       _teacherId = authProvider.getUserId;
+      logger.d('teacherId: $_teacherId');
     }
     _fetchBoardList();
     _fetchClassList();

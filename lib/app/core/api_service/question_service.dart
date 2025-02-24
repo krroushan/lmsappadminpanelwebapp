@@ -56,9 +56,9 @@ class QuestionService {
   }
 
   // Get questions by class, subject and board
-  Future<List<GetQuestion>> getQuestionsByFilter(String classId, String subjectId, String boardId, String token) async {
+  Future<List<GetQuestion>> getQuestionsByFilter(String classId, String subjectId, String token) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/question/class/$classId/subject/$subjectId/board/$boardId'),
+      Uri.parse('${ApiConfig.baseUrl}/question/class/$classId/subject/$subjectId'),
       headers: {
         'Authorization': 'Bearer $token'
       }
@@ -67,6 +67,7 @@ class QuestionService {
     if (response.statusCode == 200) {
       Map<String, dynamic> data = jsonDecode(response.body);
       List<dynamic> questionsJson = data['questions'];
+      print('Questions: ${questionsJson}');
       return questionsJson.map((json) => GetQuestion.fromJson(json)).toList();
     }
     throw Exception('Failed to load filtered questions');

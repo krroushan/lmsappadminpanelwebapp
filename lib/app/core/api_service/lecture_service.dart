@@ -20,22 +20,26 @@ class LectureService {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/lecture/all'),
       headers: {
-        'Authorization': 'Bearer $token', // Include token if required
+        'Authorization': 'Bearer $token',
       },
     );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      logger.i('jsonResponse: ${jsonResponse}');
+      logger.i('API Response: $jsonResponse');
+      
       if (jsonResponse['success']) {
         List<Lecture> lectures = (jsonResponse['lectures'] as List)
-            .map((lectureJson) => Lecture.fromJson(lectureJson))
+            .map((lectureJson) {
+              logger.d('Processing lecture: $lectureJson');
+              return Lecture.fromJson(lectureJson);
+            })
             .toList();
         logger.i('Lectures fetched successfully');
         return lectures;
       } else {
-        logger.e('Failed to load lectures');
-        throw Exception('Failed to load lectures');
+        logger.e('Failed to load lectures: ${jsonResponse['message']}');
+        throw Exception('Failed to load lectures: ${jsonResponse['message']}');
       }
     } else {
       logger.e('Failed to load lectures: ${response.statusCode}');

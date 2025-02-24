@@ -40,19 +40,19 @@ class Lecture {
   });
 
   factory Lecture.fromJson(Map<String, dynamic> json) {
-  return Lecture(
-    id: json['_id'],
-    title: json['title'],
-    description: json['description'],
-    startDate: json['startDate'],
-    startTime: json['startTime'],
-    teacher: Teacher.fromJson(json['teacher']), // Parses the nested teacher object
-    classInfo: ClassInfo.fromJson(json['class']), // Parses the nested class object
-    subject: Subject.fromJson(json['subject']), // Parses the nested subject object
-    board: Board.fromJson(json['board']), // Parses the nested board object
-    recordingUrl: json['recordingUrl'] ?? "", // This can be null
-    lectureType: json['lectureType'] ?? "",
-    thumbnail: json['thumbnail'] ?? "",
+    return Lecture(
+      id: json['_id'],
+      title: json['title'],
+      description: json['description'],
+      startDate: json['startDate'],
+      startTime: json['startTime'],
+      teacher: json['teacher'] != null ? Teacher.fromJson(json['teacher']) : null,
+      classInfo: json['class'] != null ? ClassInfo.fromJson(json['class']) : null,
+      subject: json['subject'] != null ? Subject.fromJson(json['subject']) : null,
+      board: json['board'] != null ? Board.fromJson(json['board']) : null,
+      recordingUrl: json['recordingUrl'] ?? "",
+      lectureType: json['lectureType'] ?? "",
+      thumbnail: json['thumbnail'] ?? "",
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
       streamId: json['streamId'] ?? "",

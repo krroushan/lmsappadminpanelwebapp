@@ -15,8 +15,10 @@ import '../../models/teacher/teacher.dart';
 import '../../core/api_service/teacher_service.dart';
 import '../../widgets/shimmer_loading_card.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../pages/dashboard/pages/_hrm_admin_dashboard/components/_employee_attendance_pi_chart.dart' as comp1;
-import '../../pages/dashboard/pages/_reward_earning_dashboard/components/_components.dart' as comp;
+import '../../core/api_service/exam_service.dart';
+import '../../models/exam/get_exam.dart';
+import '../../core/api_service/lecture_service.dart';
+import '../../models/lecture/lecture.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -38,6 +40,8 @@ class _DashboardViewState extends State<DashboardView> {
 
   final StudentService _studentService = StudentService();
   final TeacherService _teacherService = TeacherService();
+  final ExamService _examService = ExamService();
+  final LectureService _lectureService = LectureService();
   var log = Logger();
 
   int _activeUsers = 0;
@@ -47,6 +51,9 @@ class _DashboardViewState extends State<DashboardView> {
   List<Map<String, dynamic>> _recentActivities = [];
   Map<String, double> _attendanceData = {};
   List<Map<String, dynamic>> _upcomingSchedule = [];
+  String _userRole = '';
+  List<GetExam> _upcomingExamsList = [];
+  List<Lecture> _upcomingLectures = [];
 
   @override
   void initState() {
@@ -54,8 +61,13 @@ class _DashboardViewState extends State<DashboardView> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.checkAuthentication();
     token = authProvider.getToken;
+    _userRole = authProvider.getRole;
     _fetchStudents(1);
-    _fetchTeachers();
+    if (_userRole != 'teacher') {
+      _fetchTeachers();
+    }
+    _fetchUpcomingExams();
+    _fetchUpcomingLectures();
   }
 
   Future<void> _fetchStudents(int page) async {
@@ -100,14 +112,75 @@ class _DashboardViewState extends State<DashboardView> {
     }
   }
 
-  List<(int, String, String, Color)> get _overviewItems => [
-    (_totalStudents, "Total Students", "assets/icons/students.svg", const Color(0xFF6C63FF)),
-    (_totalTeachers, "Total Teachers", "assets/icons/teachers.svg", const Color(0xFF4CAF50)),
-    (_activeUsers, "Active Users", "assets/icons/active_users.svg", const Color(0xFFFF6B6B)),
-    (_ongoingCourses, "Ongoing Courses", "assets/icons/courses.svg", const Color(0xFFFFB74D)),
-    (_upcomingExams, "Upcoming Exams", "assets/icons/exams.svg", const Color(0xFF4DB6AC)),
-    (_totalLectures, "Total Lectures", "assets/icons/lectures.svg", const Color(0xFF64B5F6)),
-  ];
+  Future<void> _fetchUpcomingExams() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      List<GetExam> exams = await _examService.getAllExams(token);
+      setState(() {
+        _upcomingExamsList = exams;
+        _upcomingExamsList.sort((a, b) => 
+          (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now())
+        );
+        _upcomingExamsList = _upcomingExamsList.take(5).toList(); // Show only 5 most recent exams
+        _totalExams = exams.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      log.e("Failed to fetch exams: $e");
+    }
+  }
+
+  Future<void> _fetchUpcomingLectures() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      List<Lecture> lectures = await _lectureService.fetchAllLectures(token);
+      setState(() {
+        _upcomingLectures = lectures
+            .where((lecture) => lecture.lectureType == 'live')
+            .toList();
+        _upcomingLectures.sort((a, b) => 
+          DateTime.parse('${a.startDate} ${a.startTime}')
+              .compareTo(DateTime.parse('${b.startDate} ${b.startTime}'))
+        );
+        _upcomingLectures = _upcomingLectures.take(5).toList(); // Show only 5 upcoming lectures
+        _totalLectures = lectures.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      log.e("Failed to fetch lectures: $e");
+    }
+  }
+
+  List<(int, String, String, Color)> get _overviewItems {
+    final baseItems = [
+      (_totalStudents, "Total Students", "group", const Color(0xFF6C63FF)),
+    ];
+
+    if (_userRole != 'teacher') {
+      baseItems.addAll([
+        (_totalTeachers, "Total Teachers", "school", const Color(0xFF4CAF50)),
+        (_activeUsers, "Active Users", "person", const Color(0xFFFF6B6B)),
+      ]);
+    }
+
+    baseItems.addAll([
+      (_ongoingCourses, "Ongoing Courses", "book", const Color(0xFFFFB74D)),
+      (_totalExams, "All Exams", "assignment", const Color(0xFF4DB6AC)),
+      (_totalLectures, "Total Lectures", "class", const Color(0xFF64B5F6)),
+    ]);
+
+    return baseItems;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +229,7 @@ class _DashboardViewState extends State<DashboardView> {
                             value: _data.$1,
                             title: _data.$2,
                             imagePath: null,
-                            icon: const Icon(Icons.person),
+                            icon: Icon(getIconData(_data.$3)),
                             iconSize: 48,
                             valueStyle: _theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -196,27 +269,29 @@ class _DashboardViewState extends State<DashboardView> {
                           icon: Icons.video_camera_front,
                           label: 'Start Live Class',
                           onTap: () {
-                            context.go('/dashboard/live-class');
+                            context.go('/dashboard/lectures/add-lecture');
                           },
                         ),
                         _QuickActionButton(
                           icon: Icons.assignment,
                           label: 'Create Assignment',
                           onTap: () {
-                            context.go('/dashboard/assignment');
+                            context.go('/dashboard/assignments/add-assignment');
                           },
                         ),
                         _QuickActionButton(
                           icon: Icons.calendar_today,
                           label: 'Schedule Exam',
                           onTap: () {
-                            context.go('/dashboard/exam');
+                            context.go('/dashboard/exams/add-exam');
                           },
                         ),
                         _QuickActionButton(
                           icon: Icons.upload_file,
                           label: 'Upload Material',
-                          onTap: () {},
+                          onTap: () {
+                            context.go('/dashboard/study-materials/add-study-material');
+                          },
                         ),
                       ],
                     ),
@@ -230,54 +305,54 @@ class _DashboardViewState extends State<DashboardView> {
             // Statistics Card
             ResponsiveGridRow(
               children: [
-                ResponsiveGridCol(
-                  lg: 6,
-                  md: 6,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints.tightFor(height: 435),
-                    child: ShadowContainer(
-                      margin: EdgeInsetsDirectional.all(_padding / 2.5),
-                      headerText: 'Attendance Statistics',
-                      trailing: const FilterDropdownButton(),
-                      child: const comp.SMSHistoryStatisticsLineChart(),
-                    ),
-                  ),
-                ),
+                // ResponsiveGridCol(
+                //   lg: 6,
+                //   md: 6,
+                //   child: ConstrainedBox(
+                //     constraints: const BoxConstraints.tightFor(height: 435),
+                //     child: ShadowContainer(
+                //       margin: EdgeInsetsDirectional.all(_padding / 2.5),
+                //       headerText: 'Attendance Statistics',
+                //       trailing: const FilterDropdownButton(),
+                //       child: const comp.SMSHistoryStatisticsLineChart(),
+                //     ),
+                //   ),
+                // ),
 
-                ResponsiveGridCol(
-                  lg: 6,
-                  md: 6,
-                  child: ShadowContainer(
-                    margin: EdgeInsetsDirectional.all(_padding / 2.5),
-                    contentPadding: EdgeInsetsDirectional.zero,
-                    headerText: 'Top Users',
-                    trailing: Text.rich(
-                      TextSpan(
-                        text: 'View All',
-                        style: TextStyle(
-                          color: _theme.colorScheme.primary,
-                        ),
-                        mouseCursor: SystemMouseCursors.click,
-                        children: [
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: Container(
-                              margin:
-                                  const EdgeInsetsDirectional.only(start: 6),
-                              child: Icon(
-                                Icons.arrow_forward,
-                                color: _theme.colorScheme.primary,
-                                size: 16,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      style: _theme.textTheme.bodyMedium,
-                    ),
-                    child: const comp.TopUsersTable(),
-                  ),
-                ),
+                // ResponsiveGridCol(
+                //   lg: 6,
+                //   md: 6,
+                //   child: ShadowContainer(
+                //     margin: EdgeInsetsDirectional.all(_padding / 2.5),
+                //     contentPadding: EdgeInsetsDirectional.zero,
+                //     headerText: 'Top Users',
+                //     trailing: Text.rich(
+                //       TextSpan(
+                //         text: 'View All',
+                //         style: TextStyle(
+                //           color: _theme.colorScheme.primary,
+                //         ),
+                //         mouseCursor: SystemMouseCursors.click,
+                //         children: [
+                //           WidgetSpan(
+                //             alignment: PlaceholderAlignment.middle,
+                //             child: Container(
+                //               margin:
+                //                   const EdgeInsetsDirectional.only(start: 6),
+                //               child: Icon(
+                //                 Icons.arrow_forward,
+                //                 color: _theme.colorScheme.primary,
+                //                 size: 16,
+                //               ),
+                //             ),
+                //           )
+                //         ],
+                //       ),
+                //       style: _theme.textTheme.bodyMedium,
+                //     ),
+                //     child: const comp.TopUsersTable(),
+                //   ),
+                // ),
               ],
             ),
 
@@ -293,8 +368,8 @@ class _DashboardViewState extends State<DashboardView> {
                     constraints: const BoxConstraints.tightFor(height: 435),
                     child: ShadowContainer(
                       margin: EdgeInsetsDirectional.all(_padding / 2.5),
-                      headerText: 'Upcoming Schedule',
-                      trailing: const FilterDropdownButton(),
+                      headerText: 'Scheduled Live Classes',
+                      //trailing: const FilterDropdownButton(),
                       child: _buildUpcomingScheduleTable(),
                     ),
                   ),
@@ -307,7 +382,7 @@ class _DashboardViewState extends State<DashboardView> {
                     child: ShadowContainer(
                       margin: EdgeInsetsDirectional.all(_padding / 2.5),
                       headerText: 'Upcoming Exams',
-                      trailing: const FilterDropdownButton(),
+                      //trailing: const FilterDropdownButton(),
                       child: _buildUpcomingExamsTable(),
                     ),
                   ),
@@ -359,38 +434,9 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildUpcomingScheduleTable() {
-    final schedules = [
-      {
-        'date': '2024-03-01',
-        'time': '10:00 AM',
-        'subject': 'Mathematics',
-        'title': 'Calculus Fundamentals'
-      },
-      {
-        'date': '2024-03-02',
-        'time': '11:30 AM',
-        'subject': 'Physics',
-        'title': 'Wave Motion'
-      },
-      {
-        'date': '2024-03-03',
-        'time': '02:00 PM',
-        'subject': 'Chemistry',
-        'title': 'Organic Compounds'
-      },
-      {
-        'date': '2024-03-04',
-        'time': '09:00 AM',
-        'subject': 'Biology',
-        'title': 'Cell Structure'
-      },
-      {
-        'date': '2024-03-05',
-        'time': '12:00 PM',
-        'subject': 'English',
-        'title': 'Shakespeare Literature'
-      },
-    ];
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -405,26 +451,25 @@ class _DashboardViewState extends State<DashboardView> {
           DataColumn(label: Text('Subject')),
           DataColumn(label: Text('Title')),
         ],
-        rows: schedules.map((schedule) {
-          final subjectColor = _getSubjectColor(schedule['subject'] as String);
+        rows: _upcomingLectures.map((lecture) {
           return DataRow(
             cells: [
-              DataCell(Text(schedule['date'] as String)),
-              DataCell(Text(schedule['time'] as String)),
+              DataCell(Text(lecture.startDate)),
+              DataCell(Text(lecture.startTime)),
               DataCell(
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: subjectColor.withOpacity(0.1),
+                    color: _getSubjectColor(lecture.subject?.name ?? '').withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    schedule['subject'] as String,
-                    style: TextStyle(color: subjectColor),
+                    lecture.subject?.name ?? '',
+                    style: TextStyle(color: _getSubjectColor(lecture.subject?.name ?? '')),
                   ),
                 ),
               ),
-              DataCell(Text(schedule['title'] as String)),
+              DataCell(Text(lecture.title)),
             ],
           );
         }).toList(),
@@ -433,38 +478,9 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildUpcomingExamsTable() {
-    final exams = [
-      {
-        'date': '2024-03-10',
-        'time': '09:00 AM',
-        'subject': 'Mathematics',
-        'type': 'Mid-term'
-      },
-      {
-        'date': '2024-03-15',
-        'time': '10:30 AM',
-        'subject': 'Physics',
-        'type': 'Quiz'
-      },
-      {
-        'date': '2024-03-20',
-        'time': '02:00 PM',
-        'subject': 'Chemistry',
-        'type': 'Final'
-      },
-      {
-        'date': '2024-03-25',
-        'time': '11:00 AM',
-        'subject': 'Biology',
-        'type': 'Mid-term'
-      },
-      {
-        'date': '2024-03-30',
-        'time': '01:00 PM',
-        'subject': 'English',
-        'type': 'Quiz'
-      },
-    ];
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -477,28 +493,31 @@ class _DashboardViewState extends State<DashboardView> {
           DataColumn(label: Text('Date')),
           DataColumn(label: Text('Time')),
           DataColumn(label: Text('Subject')),
-          DataColumn(label: Text('Type')),
+          DataColumn(label: Text('Title')),
         ],
-        rows: exams.map((exam) {
-          final subjectColor = _getSubjectColor(exam['subject'] as String);
+        rows: _upcomingExamsList.map((exam) {
+          final DateTime examDate = exam.createdAt ?? DateTime.now();
+          final String formattedDate = "${examDate.year}-${examDate.month.toString().padLeft(2, '0')}-${examDate.day.toString().padLeft(2, '0')}";
+          final String formattedTime = "${examDate.hour.toString().padLeft(2, '0')}:${examDate.minute.toString().padLeft(2, '0')}";
+          
           return DataRow(
             cells: [
-              DataCell(Text(exam['date'] as String)),
-              DataCell(Text(exam['time'] as String)),
+              DataCell(Text(formattedDate)),
+              DataCell(Text(formattedTime)),
               DataCell(
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: subjectColor.withOpacity(0.1),
+                    color: _getSubjectColor(exam.subject.name).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    exam['subject'] as String,
-                    style: TextStyle(color: subjectColor),
+                    exam.subject.name,
+                    style: TextStyle(color: _getSubjectColor(exam.subject.name)),
                   ),
                 ),
               ),
-              DataCell(Text(exam['type'] as String)),
+              DataCell(Text(exam.title)),
             ],
           );
         }).toList(),
@@ -602,6 +621,18 @@ class _DashboardViewState extends State<DashboardView> {
         ),
       ],
     );
+  }
+
+  IconData getIconData(String name) {
+    switch (name) {
+      case 'group': return Icons.group;
+      case 'school': return Icons.school;
+      case 'person': return Icons.person;
+      case 'book': return Icons.book;
+      case 'assignment': return Icons.assignment;
+      case 'class': return Icons.class_;
+      default: return Icons.error;
+    }
   }
 }
 
